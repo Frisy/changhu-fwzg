@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>重点服务对象管理 - 服务管理</title>
+  <!-- 引入外部资源 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <style>
+    /* 继承全局样式 */
+    body { font-family: "微软雅黑", "思源黑体", sans-serif; background-color: #f5f7fa; color: #333; }
+    .btn-primary { background-color: #1890FF; border-color: #1890FF; }
+    .btn-primary:hover { background-color: #096DD9; border-color: #096DD9; }
+    .btn-outline-secondary { border-color: #ddd; color: #666; }
+    .btn-outline-secondary:hover { background-color: #f5f5f5; border-color: #ccc; }
+    .btn-danger { background-color: #FF4D4F; border-color: #FF4D4F; }
+    .btn-danger:hover { background-color: #F5222D; border-color: #F5222D; }
+    .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .card-header { background: #fff; border-bottom: 1px solid #f0f0f0; border-radius: 12px 12px 0 0; padding: 15px 20px; font-weight: 600; font-size: 15px; }
+    .card-body { padding: 20px; }
+    /* 布局样式 */
+    .app-container { display: flex; min-height: 100vh; }
+    /* 侧边导航 */
+    .sidebar { width: 220px; background: #fff; box-shadow: 1px 0 2px rgba(0,0,0,0.05); padding: 20px 0; flex-shrink: 0; }
+    .sidebar-logo { text-align: center; padding: 0 20px 20px; border-bottom: 1px solid #f0f0f0; margin-bottom: 20px; }
+    .sidebar-logo img { height: 40px; margin-bottom: 8px; }
+    .sidebar-logo h3 { font-size: 16px; color: #1890FF; font-weight: 600; margin: 0; }
+    .nav-menu { list-style: none; padding: 0; margin: 0; }
+    .nav-item { margin-bottom: 4px; }
+    .nav-link { display: flex; align-items: center; padding: 12px 20px; color: #666; text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
+    .nav-link:hover, .nav-link.active { color: #1890FF; background-color: #f0f7ff; border-left: 3px solid #1890FF; }
+    .nav-link i { font-size: 18px; margin-right: 12px; width: 20px; text-align: center; }
+    .nav-group-title { padding: 15px 20px 5px; font-size: 12px; color: #999; font-weight: 500; }
+    /* 主内容区 */
+    .main-content { flex: 1; padding: 20px; overflow-y: auto; }
+    /* 顶部导航 */
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .page-title { font-size: 20px; font-weight: 600; color: #333; margin: 0; }
+    .user-info { display: flex; align-items: center; }
+    .notification { position: relative; margin-right: 20px; cursor: pointer; }
+    .notification i { font-size: 20px; color: #666; }
+    .notification-badge { position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; background: #FF4D4F; color: #fff; border-radius: 50%; font-size: 12px; text-align: center; line-height: 18px; }
+    .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #1890FF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; margin-right: 10px; }
+    .user-name { font-size: 14px; font-weight: 500; }
+
+    /* 重点服务对象管理专属样式 */
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; }
+    .filter-group { flex: 1; min-width: 150px; }
+    .filter-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    .filter-group input, .filter-group select { width: 100%; }
+    .vip-table { width: 100%; border-collapse: collapse; }
+    .vip-table th, .vip-table td { border: 1px solid #f0f0f0; padding: 12px 15px; text-align: left; font-size: 13px; }
+    .vip-table th { background-color: #f8f9fa; font-weight: 500; }
+    .vip-table tbody tr:hover { background-color: #f9f9f9; }
+    .vip-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; background-color: #FFF7E6; color: #FAAD14; }
+    .source-badge { display: inline-block; padding: 2px 6px; border-radius: 8px; font-size: 11px; }
+    .source-auto { background-color: #E6F7FF; color: #1890FF; }
+    .source-manual { background-color: #F6FFED; color: #52C41A; }
+    
+    /* 服务不足突出显示 */
+    .vip-table tbody tr.service-insufficient {
+      background-color: #FFF1F0 !important;
+      border-left: 4px solid #FF4D4F;
+    }
+    .vip-table tbody tr.service-insufficient:hover {
+      background-color: #FFE7E5 !important;
+    }
+    .service-insufficient-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      background-color: #FF4D4F;
+      color: #fff;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 5px;
+    }
+    .service-count-warning {
+      color: #FF4D4F;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 侧边导航 -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://via.placeholder.com/80x40?text=居家长护" alt="系统Logo">
+        <h3>服务主管工作平台</h3>
+      </div>
+      
+      <!-- 导航分组：看板管理 -->
+      <div class="nav-group-title">看板管理</div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="数据驾驶舱.html" class="nav-link">
+            <i class="fa fa-dashboard"></i>
+            <span>数据驾驶舱</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="index.html" class="nav-link">
+            <i class="fa fa-dashboard"></i>
+            <span>服务对象看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="总体统计.html" class="nav-link">
+            <i class="fa fa-bar-chart"></i>
+            <span>总体统计看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="流程管理.html" class="nav-link">
+            <i class="fa fa-sitemap"></i>
+            <span>流程管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="线上回访.html" class="nav-link">
+            <i class="fa fa-phone"></i>
+            <span>线上线下回访执行</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="服务对象分配.html" class="nav-link">
+            <i class="fa fa-users"></i>
+            <span>服务对象分配</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="新增服务对象管理.html" class="nav-link">
+            <i class="fa fa-user-plus"></i>
+            <span>新增服务对象配置</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="首月服务计划管理.html" class="nav-link">
+            <i class="fa fa-calendar"></i>
+            <span>服务计划管理或打印</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="平台工单差异查询.html" class="nav-link">
+            <i class="fa fa-search"></i>
+            <span>医保工单差异查询</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="工单管理.html" class="nav-link">
+            <i class="fa fa-tasks"></i>
+            <span>工单管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="重点服务对象管理.html" class="nav-link active">
+            <i class="fa fa-star"></i>
+            <span>重点服务对象管理</span>
+          </a>
+        </li>
+      </ul>
+      
+      <!-- 导航分组：系统设置 -->
+      <div class="nav-group-title">系统设置</div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#" class="nav-link" id="caregiverSettingsLink">
+            <i class="fa fa-cog"></i>
+            <span>护理员设置</span>
+          </a>
+        </li>=
+      </ul>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <!-- 顶部导航：标题 + 用户信息 -->
+      <div class="top-nav">
+        <h1 class="page-title">重点服务对象管理</h1>
+        <div class="user-info">
+          <div class="notification">
+            <i class="fa fa-bell-o"></i>
+            <span class="notification-badge">2</span>
+          </div>
+          <div class="user-avatar">主</div>
+          <div class="user-name">服务主管</div>
+        </div>
+      </div>
+
+      <!-- 操作栏 -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <button class="btn btn-primary" id="addVipBtn">
+                <i class="fa fa-plus"></i> 添加重点服务对象
+              </button>
+            </div>
+            <div class="text-muted" style="font-size: 13px;">
+              说明：回访不满意的用户自动成为重点服务对象（系统自动维护），其余可由服务主管和机构负责人手动添加
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 筛选栏 -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="filterSource">来源</label>
+          <select class="form-select" id="filterSource">
+            <option value="">全部来源</option>
+            <option value="auto">系统自动</option>
+            <option value="manual">手动添加</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filterCaregiver">负责护理员</label>
+          <select class="form-select" id="filterCaregiver">
+            <option value="">全部护理员</option>
+            <option value="李护理">李护理</option>
+            <option value="王护理">王护理</option>
+            <option value="张护理">张护理</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filterKeyword">服务对象姓名/身份证</label>
+          <input type="text" class="form-control" id="filterKeyword" placeholder="请输入姓名或身份证号">
+        </div>
+        <div class="filter-group" style="align-self: flex-end;">
+          <button class="btn btn-primary" id="queryBtn">
+            <i class="fa fa-search"></i> 查询
+          </button>
+          <button class="btn btn-outline-secondary" id="resetBtn">
+            <i class="fa fa-refresh"></i> 重置
+          </button>
+        </div>
+      </div>
+
+      <!-- 重点服务对象列表 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <span>重点服务对象列表</span>
+            <span class="text-muted" style="font-size: 13px; font-weight: normal;">
+              共 <span id="totalCount">0</span> 条记录
+            </span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="vip-table" id="vipTable">
+              <thead>
+                <tr>
+                  <th style="width: 60px;">序号</th>
+                  <th style="width: 100px;">服务对象</th>
+                  <th style="width: 150px;">身份证号</th>
+                  <th style="width: 100px;">负责护理员</th>
+                  <th style="width: 100px;">来源</th>
+                  <th style="width: 120px;">本周服务次数</th>
+                  <th style="width: 150px;">设置时间</th>
+                  <th style="width: 150px;">设置人</th>
+                  <th style="width: 300px;">设置原因</th>
+                  <th style="width: 100px;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="vipTableBody">
+                <!-- 数据将通过JS动态生成 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加重点服务对象模态框 -->
+  <div class="modal fade" id="addVipModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">添加重点服务对象</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addVipForm">
+            <div class="mb-3">
+              <label class="form-label">服务对象标识 (client_id) <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="vipClientSearch" placeholder="请输入服务对象姓名或身份证号进行搜索">
+                <button class="btn btn-outline-secondary" type="button" id="searchClientBtn">
+                  <i class="fa fa-search"></i> 搜索
+                </button>
+              </div>
+              <div id="clientSearchResults" class="mt-2" style="display: none;">
+                <!-- 搜索结果列表 -->
+              </div>
+              <input type="hidden" id="selectedClientId">
+              <div id="selectedClientInfo" class="mt-2" style="display: none;">
+                <div class="alert alert-info">
+                  <strong>已选择：</strong><span id="selectedClientName"></span> (ID: <span id="selectedClientIdDisplay"></span>)
+                </div>
+              </div>
+              <small class="form-text text-muted">请选择要设置为重点的服务对象</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">设置重点服务对象的原因 (vip_desc) <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="vipDesc" rows="4" placeholder="请详细说明将该服务对象设置为重点服务对象的原因（最多254个字符）" required maxlength="254"></textarea>
+              <small class="form-text text-muted">说明：回访不满意的用户自动成为重点服务对象（数据库自动维护），其余可以由服务主管和机构负责人添加</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">设置时间 (op_time)</label>
+              <input type="text" class="form-control" id="opTime" value="" readonly>
+              <small class="form-text text-muted">系统自动设置为当前时间</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">设置人 (op_id)</label>
+              <input type="text" class="form-control" id="opUserName" value="服务主管" readonly>
+              <small class="form-text text-muted">当前登录用户</small>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" id="confirmAddVipBtn" disabled>确认添加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认模态框 -->
+  <div class="modal fade" id="deleteVipModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">删除确认</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>确定要删除该重点服务对象记录吗？删除后将无法恢复。</p>
+          <div class="alert alert-warning">
+            <i class="fa fa-exclamation-triangle"></i> 注意：删除后该服务对象将不再显示在重点服务对象列表中
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteVipBtn">确认删除</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    $(function() {
+      // 统一的提示函数
+      function showMessage(title, message, type = 'info') {
+        const alertClass = type === 'success' ? 'alert-success' : 
+                          type === 'error' ? 'alert-danger' : 
+                          type === 'warning' ? 'alert-warning' : 'alert-info';
+        const alertHtml = `
+          <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <strong>${title}</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        `;
+        $('body').append(alertHtml);
+        setTimeout(() => {
+          $('.alert').fadeOut(() => $(this).remove());
+        }, 3000);
+      }
+      
+      // 初始化模态框
+      const addVipModal = new bootstrap.Modal('#addVipModal');
+      const deleteVipModal = new bootstrap.Modal('#deleteVipModal');
+      
+      let currentDeleteId = null;
+      
+      // 获取配置数据：每周最少服务次数（sys_config_value表，id=8）
+      // 实际项目中应从后端API获取
+      const minWeeklyServiceCount = 2; // 默认值，实际应从配置表获取
+      
+      // 模拟服务对象数据（用于搜索）
+      const mockClients = [
+        { id: 1, name: '陈一', idCard: '330106********1234', caregiver: '李护理' },
+        { id: 2, name: '吴二', idCard: '330105********5678', caregiver: '王护理' },
+        { id: 3, name: '郑三', idCard: '330602********9012', caregiver: '张护理' },
+        { id: 4, name: '冯四', idCard: '330602********3456', caregiver: '李护理' },
+        { id: 5, name: '钱五', idCard: '330602********7890', caregiver: '王护理' },
+        { id: 6, name: '孙六', idCard: '330106********2345', caregiver: '张护理' },
+        { id: 7, name: '周七', idCard: '330105********6789', caregiver: '李护理' },
+        { id: 8, name: '吴八', idCard: '330602********0123', caregiver: '王护理' },
+        { id: 9, name: '郑九', idCard: '330106********4567', caregiver: '张护理' },
+        { id: 10, name: '王十', idCard: '330105********8901', caregiver: '李护理' },
+        { id: 11, name: '赵十一', idCard: '330602********2345', caregiver: '王护理' },
+        { id: 12, name: '钱十二', idCard: '330106********6789', caregiver: '张护理' }
+      ];
+      
+      // 模拟重点服务对象数据
+      const mockVipData = [
+        {
+          id: 1,
+          clientId: 1,
+          clientName: '陈一',
+          idCard: '330106********1234',
+          caregiver: '李护理',
+          source: 'auto',
+          opTime: '2025-10-10 14:30:00',
+          opUserName: '系统自动',
+          vipDesc: '回访不满意（系统自动添加）',
+          weeklyServiceCount: 1 // 本周服务次数不足
+        },
+        {
+          id: 2,
+          clientId: 2,
+          clientName: '吴二',
+          idCard: '330105********5678',
+          caregiver: '王护理',
+          source: 'manual',
+          opTime: '2025-10-12 09:15:00',
+          opUserName: '服务主管',
+          vipDesc: '服务对象家属多次投诉服务质量，需要重点关注',
+          weeklyServiceCount: 2
+        },
+        {
+          id: 3,
+          clientId: 3,
+          clientName: '郑三',
+          idCard: '330602********9012',
+          caregiver: '张护理',
+          source: 'auto',
+          opTime: '2025-10-14 16:20:00',
+          opUserName: '系统自动',
+          vipDesc: '回访不满意（系统自动添加）',
+          weeklyServiceCount: 0 // 本周服务次数不足
+        },
+        {
+          id: 4,
+          clientId: 4,
+          clientName: '冯四',
+          idCard: '330602********3456',
+          caregiver: '李护理',
+          source: 'manual',
+          opTime: '2025-10-15 10:20:00',
+          opUserName: '服务主管',
+          vipDesc: '服务对象近期身体状况恶化，需要加强护理频次和关注度',
+          weeklyServiceCount: 1 // 本周服务次数不足
+        },
+        {
+          id: 5,
+          clientId: 5,
+          clientName: '钱五',
+          idCard: '330602********7890',
+          caregiver: '王护理',
+          source: 'auto',
+          opTime: '2025-10-16 11:45:00',
+          opUserName: '系统自动',
+          vipDesc: '回访不满意（系统自动添加）',
+          weeklyServiceCount: 2
+        },
+        {
+          id: 6,
+          clientId: 6,
+          clientName: '孙六',
+          idCard: '330106********2345',
+          caregiver: '张护理',
+          source: 'manual',
+          opTime: '2025-10-17 08:30:00',
+          opUserName: '机构负责人',
+          vipDesc: '服务对象家属反映护理员服务态度不佳，存在沟通问题，需要重点监督',
+          weeklyServiceCount: 3
+        },
+        {
+          id: 7,
+          clientId: 7,
+          clientName: '周七',
+          idCard: '330105********6789',
+          caregiver: '李护理',
+          source: 'auto',
+          opTime: '2025-10-18 15:10:00',
+          opUserName: '系统自动',
+          vipDesc: '回访不满意（系统自动添加）',
+          weeklyServiceCount: 1 // 本周服务次数不足
+        },
+        {
+          id: 8,
+          clientId: 8,
+          clientName: '吴八',
+          idCard: '330602********0123',
+          caregiver: '王护理',
+          source: 'manual',
+          opTime: '2025-10-19 13:25:00',
+          opUserName: '服务主管',
+          vipDesc: '服务对象为独居老人，近期多次出现服务异常情况，需要加强关注和定期回访',
+          weeklyServiceCount: 0 // 本周服务次数不足
+        },
+        {
+          id: 9,
+          clientId: 9,
+          clientName: '郑九',
+          idCard: '330106********4567',
+          caregiver: '张护理',
+          source: 'auto',
+          opTime: '2025-10-20 09:50:00',
+          opUserName: '系统自动',
+          vipDesc: '回访不满意（系统自动添加）'
+        },
+        {
+          id: 10,
+          clientId: 10,
+          clientName: '王十',
+          idCard: '330105********8901',
+          caregiver: '李护理',
+          source: 'manual',
+          opTime: '2025-10-21 14:15:00',
+          opUserName: '服务主管',
+          vipDesc: '服务对象家属要求更换护理员，但暂时无法安排，需要重点跟进服务质量和沟通协调',
+          weeklyServiceCount: 1 // 本周服务次数不足
+        },
+        {
+          id: 11,
+          clientId: 11,
+          clientName: '赵十一',
+          idCard: '330602********2345',
+          caregiver: '王护理',
+          source: 'auto',
+          opTime: '2025-10-22 16:40:00',
+          opUserName: '系统自动',
+          vipDesc: '回访不满意（系统自动添加）',
+          weeklyServiceCount: 0 // 本周服务次数不足
+        },
+        {
+          id: 12,
+          clientId: 12,
+          clientName: '钱十二',
+          idCard: '330106********6789',
+          caregiver: '张护理',
+          source: 'manual',
+          opTime: '2025-10-23 11:00:00',
+          opUserName: '机构负责人',
+          vipDesc: '服务对象近期出现多次服务时间不准确、服务时长不足等问题，需要重点监控和整改',
+          weeklyServiceCount: 1 // 本周服务次数不足
+        }
+      ];
+      
+      // 渲染重点服务对象列表
+      function renderVipList() {
+        const tbody = $('#vipTableBody');
+        tbody.empty();
+        
+        let filteredData = mockVipData;
+        
+        // 按来源筛选
+        const filterSource = $('#filterSource').val();
+        if (filterSource) {
+          filteredData = filteredData.filter(item => item.source === filterSource);
+        }
+        
+        // 按护理员筛选
+        const filterCaregiver = $('#filterCaregiver').val();
+        if (filterCaregiver) {
+          filteredData = filteredData.filter(item => item.caregiver === filterCaregiver);
+        }
+        
+        // 按关键词筛选
+        const filterKeyword = $('#filterKeyword').val().trim();
+        if (filterKeyword) {
+          filteredData = filteredData.filter(item => 
+            item.clientName.includes(filterKeyword) || 
+            item.idCard.includes(filterKeyword)
+          );
+        }
+        
+        if (filteredData.length === 0) {
+          tbody.html('<tr><td colspan="10" class="text-center text-muted">暂无重点服务对象记录</td></tr>');
+          $('#totalCount').text(0);
+          return;
+        }
+        
+        filteredData.forEach((item, index) => {
+          const sourceClass = item.source === 'auto' ? 'source-auto' : 'source-manual';
+          const sourceText = item.source === 'auto' ? '系统自动' : '手动添加';
+          
+          // 获取本周服务次数（如果数据中没有，默认为0）
+          const weeklyCount = item.weeklyServiceCount !== undefined ? item.weeklyServiceCount : 0;
+          
+          // 检查是否服务不足
+          const isServiceInsufficient = weeklyCount < minWeeklyServiceCount;
+          
+          // 构建行HTML，如果服务不足则添加特殊类
+          const rowClass = isServiceInsufficient ? 'service-insufficient' : '';
+          const serviceCountClass = isServiceInsufficient ? 'service-count-warning' : '';
+          const insufficientBadge = isServiceInsufficient ? `<span class="service-insufficient-badge">服务不足</span>` : '';
+          
+          const row = `
+            <tr class="${rowClass}">
+              <td>${index + 1}</td>
+              <td><span class="vip-badge">${item.clientName}</span>${insufficientBadge}</td>
+              <td>${item.idCard}</td>
+              <td>${item.caregiver}</td>
+              <td><span class="source-badge ${sourceClass}">${sourceText}</span></td>
+              <td class="${serviceCountClass}">${weeklyCount}次 <span style="font-size: 11px; color: #999;">(最少${minWeeklyServiceCount}次)</span></td>
+              <td>${item.opTime}</td>
+              <td>${item.opUserName}</td>
+              <td>${item.vipDesc}</td>
+              <td>
+                <button class="btn btn-sm btn-danger delete-vip-btn" data-id="${item.id}">删除</button>
+              </td>
+            </tr>
+          `;
+          tbody.append(row);
+        });
+        
+        $('#totalCount').text(filteredData.length);
+        
+        // 重新绑定删除按钮事件
+        $('.delete-vip-btn').off('click').on('click', function() {
+          const id = parseInt($(this).data('id'));
+          currentDeleteId = id;
+          deleteVipModal.show();
+        });
+      }
+      
+      // 添加重点服务对象按钮
+      $('#addVipBtn').click(function() {
+        $('#addVipForm')[0].reset();
+        $('#selectedClientId').val('');
+        $('#selectedClientInfo').hide();
+        $('#clientSearchResults').hide();
+        $('#confirmAddVipBtn').prop('disabled', true);
+        addVipModal.show();
+      });
+      
+      // 搜索服务对象
+      $('#searchClientBtn').click(function() {
+        const keyword = $('#vipClientSearch').val().trim();
+        if (!keyword) {
+          alert('请输入服务对象姓名或身份证号');
+          return;
+        }
+        
+        // 模拟搜索（实际项目中应调用后端API）
+        const results = mockClients.filter(client => 
+          client.name.includes(keyword) || client.idCard.includes(keyword)
+        );
+        
+        if (results.length === 0) {
+          $('#clientSearchResults').html('<div class="alert alert-warning">未找到匹配的服务对象</div>').show();
+          return;
+        }
+        
+        let resultsHtml = '<div class="list-group">';
+        results.forEach(client => {
+          resultsHtml += `
+            <a href="#" class="list-group-item list-group-item-action select-client-item" 
+               data-id="${client.id}" 
+               data-name="${client.name}" 
+               data-idcard="${client.idCard}">
+              <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">${client.name}</h6>
+                <small>${client.caregiver}</small>
+              </div>
+              <p class="mb-1">${client.idCard}</p>
+            </a>
+          `;
+        });
+        resultsHtml += '</div>';
+        
+        $('#clientSearchResults').html(resultsHtml).show();
+        
+        // 绑定选择事件
+        $('.select-client-item').click(function(e) {
+          e.preventDefault();
+          const clientId = $(this).data('id');
+          const clientName = $(this).data('name');
+          const clientIdCard = $(this).data('idcard');
+          
+          $('#selectedClientId').val(clientId);
+          $('#selectedClientName').text(`${clientName}（${clientIdCard}）`);
+          $('#selectedClientIdDisplay').text(clientId);
+          $('#selectedClientInfo').show();
+          $('#clientSearchResults').hide();
+          $('#confirmAddVipBtn').prop('disabled', false);
+          
+          // 自动设置当前时间
+          const now = new Date();
+          const timeStr = now.toLocaleString('zh-CN', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit' 
+          }).replace(/\//g, '-');
+          $('#opTime').val(timeStr);
+        });
+      });
+      
+      // 确认添加重点服务对象
+      $('#confirmAddVipBtn').click(function() {
+        const clientId = $('#selectedClientId').val();
+        const vipDesc = $('#vipDesc').val().trim();
+        
+        if (!clientId) {
+          alert('请选择服务对象');
+          return;
+        }
+        
+        if (!vipDesc) {
+          alert('请填写设置原因');
+          return;
+        }
+        
+        // 获取选中的服务对象信息
+        const selectedClient = mockClients.find(c => c.id == clientId);
+        if (!selectedClient) {
+          alert('服务对象信息错误');
+          return;
+        }
+        
+        // 添加重点服务对象（实际项目中应调用后端API）
+        // 根据数据库设计：client_id, op_id, op_time, vip_desc
+        const now = new Date();
+        const opTime = now.toISOString().slice(0, 19).replace('T', ' ');
+        const newVip = {
+          id: mockVipData.length + 1,
+          clientId: selectedClient.id, // client_id
+          clientName: selectedClient.name,
+          idCard: selectedClient.idCard,
+          caregiver: selectedClient.caregiver,
+          source: 'manual',
+          opTime: $('#opTime').val() || opTime, // op_time (timestamp)
+          opId: 1, // op_id (当前用户ID，实际应从登录信息获取)
+          opUserName: $('#opUserName').val() || '服务主管', // op_id对应的用户名
+          vipDesc: vipDesc // vip_desc (varchar(254))
+        };
+        
+        mockVipData.push(newVip);
+        
+        showMessage('成功', '已添加重点服务对象', 'success');
+        addVipModal.hide();
+        renderVipList();
+      });
+      
+      // 确认删除重点服务对象
+      $('#confirmDeleteVipBtn').click(function() {
+        if (!currentDeleteId) return;
+        
+        // 删除重点服务对象（实际项目中应调用后端API）
+        const index = mockVipData.findIndex(item => item.id === currentDeleteId);
+        if (index !== -1) {
+          mockVipData.splice(index, 1);
+        }
+        
+        showMessage('成功', '已删除重点服务对象记录', 'success');
+        deleteVipModal.hide();
+        renderVipList();
+      });
+      
+      // 查询按钮
+      $('#queryBtn').click(function() {
+        renderVipList();
+      });
+      
+      // 重置按钮
+      $('#resetBtn').click(function() {
+        $('#filterSource').val('');
+        $('#filterCaregiver').val('');
+        $('#filterKeyword').val('');
+        renderVipList();
+      });
+      
+      // 初始化渲染
+      renderVipList();
+    });
+  </script>
+</body>
+</html>
+
+

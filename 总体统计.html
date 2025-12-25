@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>综合统计 - 统计分析</title>
+  <!-- 引入外部资源 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <style>
+    /* 继承全局样式 */
+    body { font-family: "微软雅黑", "思源黑体", sans-serif; background-color: #f5f7fa; color: #333; }
+    .btn-primary { background-color: #1890FF; border-color: #1890FF; }
+    .btn-primary:hover { background-color: #096DD9; border-color: #096DD9; }
+    .btn-outline-secondary { border-color: #ddd; color: #666; }
+    .btn-outline-secondary:hover { background-color: #f5f5f5; border-color: #ccc; }
+    .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .card-header { background: #fff; border-bottom: 1px solid #f0f0f0; border-radius: 12px 12px 0 0; padding: 15px 20px; font-weight: 600; font-size: 15px; }
+    .card-body { padding: 20px; }
+    /* 布局样式 */
+    .app-container { display: flex; min-height: 100vh; }
+    /* 侧边导航 */
+    .sidebar { width: 220px; background: #fff; box-shadow: 1px 0 2px rgba(0,0,0,0.05); padding: 20px 0; flex-shrink: 0; }
+    .sidebar-logo { text-align: center; padding: 0 20px 20px; border-bottom: 1px solid #f0f0f0; margin-bottom: 20px; }
+    .sidebar-logo img { height: 40px; margin-bottom: 8px; }
+    .sidebar-logo h3 { font-size: 16px; color: #1890FF; font-weight: 600; margin: 0; }
+    .nav-menu { list-style: none; padding: 0; margin: 0; }
+    .nav-item { margin-bottom: 4px; }
+    .nav-link { display: flex; align-items: center; padding: 12px 20px; color: #666; text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
+    .nav-link:hover, .nav-link.active { color: #1890FF; background-color: #f0f7ff; border-left: 3px solid #1890FF; }
+    .nav-link i { font-size: 18px; margin-right: 12px; width: 20px; text-align: center; }
+    .nav-group-title { padding: 15px 20px 5px; font-size: 12px; color: #999; font-weight: 500; }
+    /* 主内容区 */
+    .main-content { flex: 1; padding: 20px; overflow-y: auto; }
+    /* 顶部导航 */
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+    .page-title { font-size: 20px; font-weight: 600; color: #333; margin: 0; flex: 1; min-width: 200px; }
+    .user-info { display: flex; align-items: center; flex-shrink: 0; }
+    .notification { position: relative; margin-right: 20px; cursor: pointer; }
+    .notification i { font-size: 20px; color: #666; }
+    .notification-badge { position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; background: #FF4D4F; color: #fff; border-radius: 50%; font-size: 12px; text-align: center; line-height: 18px; }
+    .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #1890FF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; margin-right: 10px; }
+    .user-name { font-size: 14px; font-weight: 500; }
+
+    /* 统计页面专属样式 */
+    .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .stats-title { font-size: 20px; font-weight: 600; color: #333; margin: 0; }
+    .template-selector { 
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+      flex-shrink: 0;
+      min-width: 250px;
+    }
+    .template-selector label { 
+      margin-bottom: 0; 
+      font-weight: 500; 
+      display: inline-block;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+    .template-selector select {
+      min-width: 150px;
+      max-width: 200px;
+    }
+    
+    /* 筛选区样式 */
+    .filter-section { background: #fff; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; }
+    .filter-row { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+    .filter-group { flex: 1; min-width: 180px; max-width: 300px; }
+    .filter-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    .filter-group .form-control, .filter-group .form-select { width: 100%; }
+    .filter-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    
+    /* 数据展示区样式 */
+    .data-section { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .chart-container { height: 300px; margin-bottom: 20px; position: relative; }
+    .chart-toggle { position: absolute; top: 10px; right: 10px; z-index: 10; }
+    .no-data { text-align: center; padding: 50px 0; color: #999; }
+    .no-data i { font-size: 48px; margin-bottom: 15px; display: block; }
+    
+    /* 表格样式 */
+    .stats-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .stats-table th, .stats-table td { border: 1px solid #f0f0f0; padding: 10px 12px; text-align: center; font-size: 13px; }
+    .stats-table th { background-color: #f8f9fa; font-weight: 500; }
+    .stats-table tbody tr:hover { background-color: #f9f9f9; }
+    .stats-table .summary-row { background-color: #f0f7ff; font-weight: 500; }
+    .stats-table .detail-link { color: #1890FF; cursor: pointer; text-decoration: underline; }
+    .stats-table .danger { color: #FF4D4F; font-weight: 500; }
+    .stats-table .action-links { display: inline-flex; gap: 8px; align-items: center; }
+    .stats-table .action-links a { color: #1890FF; text-decoration: none; font-size: 14px; }
+    .stats-table .action-links a:hover { color: #096DD9; text-decoration: underline; }
+    
+    /* 操作区样式 */
+    .action-section { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; flex-wrap: wrap; gap: 10px; }
+    .export-btn { display: flex; align-items: center; gap: 5px; }
+    .save-template-btn { display: flex; align-items: center; gap: 5px; }
+    
+    /* 模态框样式 */
+    .detail-modal .modal-dialog { max-width: 900px; }
+    .detail-modal .modal-body { max-height: 70vh; overflow-y: auto; }
+    .modal-header { background-color: #f8f9fa; border-bottom: 1px solid #f0f0f0; }
+    
+    /* 标签页样式调整 */
+    .nav-tabs .nav-link { border: 1px solid transparent; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; color: #666; padding: 10px 20px; }
+    .nav-tabs .nav-link.active { color: #1890FF; background-color: #fff; border-color: #dee2e6 #dee2e6 #fff; border-top: 3px solid #1890FF; font-weight: 500; }
+    .tab-content { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 侧边导航 -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://via.placeholder.com/80x40?text=居家长护" alt="系统Logo">
+        <h3>服务主管工作平台</h3>
+      </div>
+      
+      <div class="nav-group-title">看板管理</div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="数据驾驶舱.html" class="nav-link">
+            <i class="fa fa-dashboard"></i>
+            <span>数据驾驶舱</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="index.html" class="nav-link">
+            <i class="fa fa-dashboard"></i>
+            <span>服务对象看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="总体统计.html" class="nav-link active">
+            <i class="fa fa-bar-chart"></i>
+            <span>总体统计看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="流程管理.html" class="nav-link">
+            <i class="fa fa-sitemap"></i>
+            <span>流程管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="线上回访.html" class="nav-link">
+            <i class="fa fa-phone"></i>
+            <span>线上线下回访执行</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="服务对象分配.html" class="nav-link">
+            <i class="fa fa-users"></i>
+            <span>服务对象分配</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="新增服务对象管理.html" class="nav-link">
+            <i class="fa fa-user-plus"></i>
+            <span>新增服务对象配置</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="首月服务计划管理.html" class="nav-link">
+            <i class="fa fa-calendar"></i>
+            <span>服务计划管理或打印</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="平台工单差异查询.html" class="nav-link">
+            <i class="fa fa-search"></i>
+            <span>医保工单差异查询</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="工单管理.html" class="nav-link">
+            <i class="fa fa-tasks"></i>
+            <span>工单管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="重点服务对象管理.html" class="nav-link">
+            <i class="fa fa-star"></i>
+            <span>重点服务对象管理</span>
+          </a>
+        </li>
+      </ul>
+      
+      <!-- 导航分组：系统设置 -->
+      <div class="nav-group-title">系统设置</div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#" class="nav-link" id="caregiverSettingsLink">
+            <i class="fa fa-cog"></i>
+            <span>护理员设置</span>
+          </a>
+        </li>=
+      </ul>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <!-- 顶部导航：标题 + 模板选择 + 用户信息 -->
+      <div class="top-nav">
+        <h1 class="page-title">综合统计 - 统计分析</h1>
+        <div class="template-selector">
+          <label>查询模板：</label>
+          <select id="templateSelect" class="form-select form-select-sm">
+            <option value="">-- 请选择模板 --</option>
+            <!-- 动态加载保存的模板 -->
+          </select>
+          <button id="deleteTemplateBtn" class="btn btn-sm btn-outline-danger" disabled>
+            <i class="fa fa-trash"></i>
+          </button>
+        </div>
+        <div class="user-info">
+          <div class="notification">
+            <i class="fa fa-bell-o"></i>
+            <span class="notification-badge">2</span>
+          </div>
+          <div class="user-avatar">主</div>
+          <div class="user-name">服务主管</div>
+        </div>
+      </div>
+
+      <!-- 统计模块标签页 -->
+      <ul class="nav nav-tabs" id="statsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="object-stats-tab" data-bs-toggle="tab" data-bs-target="#object-stats" type="button" role="tab" aria-controls="object-stats" aria-selected="true">服务对象统计</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="assessment-stats-tab" data-bs-toggle="tab" data-bs-target="#assessment-stats" type="button" role="tab" aria-controls="assessment-stats" aria-selected="false">评估质量统计</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="workorder-stats-tab" data-bs-toggle="tab" data-bs-target="#workorder-stats" type="button" role="tab" aria-controls="workorder-stats" aria-selected="false">工单统计</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="visit-stats-tab" data-bs-toggle="tab" data-bs-target="#visit-stats" type="button" role="tab" aria-controls="visit-stats" aria-selected="false">回访统计</button>
+        </li>
+      </ul>
+
+      <!-- 统计内容区 -->
+      <div class="tab-content" id="statsTabContent">
+        <!-- 服务对象统计 -->
+        <div class="tab-pane fade show active" id="object-stats" role="tabpanel" aria-labelledby="object-stats-tab">
+          <!-- 筛选区 -->
+          <div class="filter-section">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label for="objectRegion">行政区域</label>
+                <select id="objectRegion" class="form-select">
+                  <option value="all">全部区域</option>
+                  <option value="yuecheng">越城区</option>
+                  <option value="keqiao">柯桥区</option>
+                  <option value="shangyu">上虞区</option>
+                  <option value="zhuji">诸暨市</option>
+                  <option value="shengzhou">嵊州市</option>
+                  <option value="xinchang">新昌县</option>
+                </select>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button id="objectSearchBtn" class="btn btn-primary">
+                <i class="fa fa-search"></i> 查询
+              </button>
+              <button id="objectResetBtn" class="btn btn-outline-secondary">
+                <i class="fa fa-refresh"></i> 重置
+              </button>
+            </div>
+          </div>
+
+          <!-- 数据展示区 -->
+          <div class="data-section">
+            <div id="objectChartContainer" class="chart-container" style="display: none;">
+              <div class="chart-toggle">
+                <button id="showObjectChartBtn" class="btn btn-sm btn-outline-secondary">
+                  <i class="fa fa-bar-chart"></i> 显示图表
+                </button>
+              </div>
+              <canvas id="objectChart"></canvas>
+            </div>
+            
+            <div id="objectDataTable">
+              <table class="stats-table">
+                <thead>
+                  <tr>
+                    <th>行政区域</th>
+                    <th>重度失能总人数</th>
+                    <th>累计服务人数</th>
+                    <th>当前正常服务人数</th>
+                    <th>中止服务人数</th>
+                    <th>死亡人数</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>越城区</td>
+                    <td><span class="detail-link" data-type="heavyDisability" data-region="yuecheng">128</span></td>
+                    <td><span class="detail-link" data-type="totalServed" data-region="yuecheng">245</span></td>
+                    <td>186</td>
+                    <td>45</td>
+                    <td>14</td>
+                  </tr>
+                  <tr>
+                    <td>柯桥区</td>
+                    <td><span class="detail-link" data-type="heavyDisability" data-region="keqiao">95</span></td>
+                    <td><span class="detail-link" data-type="totalServed" data-region="keqiao">187</span></td>
+                    <td>152</td>
+                    <td>28</td>
+                    <td>7</td>
+                  </tr>
+                  <tr>
+                    <td>上虞区</td>
+                    <td><span class="detail-link" data-type="heavyDisability" data-region="shangyu">110</span></td>
+                    <td><span class="detail-link" data-type="totalServed" data-region="shangyu">213</span></td>
+                    <td>165</td>
+                    <td>38</td>
+                    <td>10</td>
+                  </tr>
+                  <tr>
+                    <td>诸暨市</td>
+                    <td><span class="detail-link" data-type="heavyDisability" data-region="zhuji">132</span></td>
+                    <td><span class="detail-link" data-type="totalServed" data-region="zhuji">268</span></td>
+                    <td>203</td>
+                    <td>52</td>
+                    <td>13</td>
+                  </tr>
+                  <tr class="summary-row">
+                    <td>总计</td>
+                    <td><span class="detail-link" data-type="heavyDisability" data-region="all">465</span></td>
+                    <td><span class="detail-link" data-type="totalServed" data-region="all">913</span></td>
+                    <td>706</td>
+                    <td>163</td>
+                    <td>44</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div id="objectNoData" class="no-data" style="display: none;">
+              <i class="fa fa-bar-chart"></i>
+              <h5>暂无统计数据</h5>
+              <p>请调整筛选条件后重试</p>
+            </div>
+          </div>
+
+          <!-- 操作区 -->
+          <div class="action-section">
+            <button id="exportObjectBtn" class="btn btn-primary export-btn">
+              <i class="fa fa-download"></i> 导出Excel
+            </button>
+            <button id="saveObjectTemplateBtn" class="btn btn-outline-secondary save-template-btn">
+              <i class="fa fa-save"></i> 保存查询模板
+            </button>
+          </div>
+        </div>
+
+        <!-- 评估质量统计 -->
+        <div class="tab-pane fade" id="assessment-stats" role="tabpanel" aria-labelledby="assessment-stats-tab">
+          <!-- 筛选区 -->
+          <div class="filter-section">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label for="assessmentDateRange">提交日期范围</label>
+                <div class="input-group">
+                  <input type="date" id="assessmentStartDate" class="form-control" value="2025-01-01">
+                  <span class="input-group-text">至</span>
+                  <input type="date" id="assessmentEndDate" class="form-control" value="2025-12-31">
+                </div>
+              </div>
+              <div class="filter-group">
+                <label for="assessmentDimension">统计维度</label>
+                <select id="assessmentDimension" class="form-select">
+                  <option value="assessor">按评估员</option>
+                  <option value="region">按行政区域</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="assessmentFilter">筛选条件</label>
+                <select id="assessmentFilter" class="form-select">
+                  <option value="all">全部</option>
+                  <option value="yuecheng">越城区</option>
+                  <option value="keqiao">柯桥区</option>
+                  <option value="shangyu">上虞区</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="genderStats">按性别统计</label>
+                <div class="form-check form-switch" style="margin-top: 7px;">
+                  <input class="form-check-input" type="checkbox" id="genderStats">
+                </div>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button id="assessmentSearchBtn" class="btn btn-primary">
+                <i class="fa fa-search"></i> 查询
+              </button>
+              <button id="assessmentResetBtn" class="btn btn-outline-secondary">
+                <i class="fa fa-refresh"></i> 重置
+              </button>
+            </div>
+          </div>
+
+          <!-- 数据展示区 -->
+          <div class="data-section">
+            <div id="assessmentChartContainer" class="chart-container" style="display: none;">
+              <div class="chart-toggle">
+                <button id="showAssessmentChartBtn" class="btn btn-sm btn-outline-secondary">
+                  <i class="fa fa-bar-chart"></i> 显示图表
+                </button>
+              </div>
+              <canvas id="assessmentChart"></canvas>
+            </div>
+            
+            <div id="assessmentDataTable">
+              <table class="stats-table">
+                <thead>
+                  <tr>
+                    <th>统计维度</th>
+                    <th>评估总人数</th>
+                    <th>轻度人数</th>
+                    <th>中度人数</th>
+                    <th>重度人数</th>
+                    <th>通过率</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>张评估师</td>
+                    <td>126</td>
+                    <td>32</td>
+                    <td>45</td>
+                    <td>49</td>
+                    <td>38.89%</td>
+                  </tr>
+                  <tr>
+                    <td>李评估师</td>
+                    <td>105</td>
+                    <td>28</td>
+                    <td>36</td>
+                    <td>41</td>
+                    <td>39.05%</td>
+                  </tr>
+                  <tr>
+                    <td>王评估师</td>
+                    <td>142</td>
+                    <td>35</td>
+                    <td>52</td>
+                    <td>55</td>
+                    <td>38.73%</td>
+                  </tr>
+                  <tr class="summary-row">
+                    <td>总计</td>
+                    <td>373</td>
+                    <td>95</td>
+                    <td>133</td>
+                    <td>145</td>
+                    <td>38.87%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div id="assessmentNoData" class="no-data" style="display: none;">
+              <i class="fa fa-bar-chart"></i>
+              <h5>暂无统计数据</h5>
+              <p>请调整筛选条件后重试</p>
+            </div>
+          </div>
+
+          <!-- 操作区 -->
+          <div class="action-section">
+            <button id="exportAssessmentBtn" class="btn btn-primary export-btn">
+              <i class="fa fa-download"></i> 导出Excel
+            </button>
+            <button id="saveAssessmentTemplateBtn" class="btn btn-outline-secondary save-template-btn">
+              <i class="fa fa-save"></i> 保存查询模板
+            </button>
+          </div>
+        </div>
+
+        <!-- 工单统计 -->
+        <div class="tab-pane fade" id="workorder-stats" role="tabpanel" aria-labelledby="workorder-stats-tab">
+          <!-- 筛选区 -->
+          <div class="filter-section">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label for="workorderMonth">统计月份</label>
+                <input type="month" id="workorderMonth" class="form-control" value="2025-10">
+              </div>
+              <div class="filter-group">
+                <label for="workorderDimension">统计维度</label>
+                <select id="workorderDimension" class="form-select">
+                  <option value="overtime">超时服务统计</option>
+                  <option value="underService">服务不足统计</option>
+                  <option value="workingHours">服务工时统计</option>
+                  <option value="abnormal">异常工单统计</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="workorderFilter">筛选条件</label>
+                <select id="workorderFilter" class="form-select">
+                  <option value="all">全部</option>
+                  <option value="caregiver1">李护理</option>
+                  <option value="caregiver2">王护理</option>
+                  <option value="caregiver3">张护理</option>
+                </select>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button id="workorderSearchBtn" class="btn btn-primary">
+                <i class="fa fa-search"></i> 查询
+              </button>
+              <button id="workorderResetBtn" class="btn btn-outline-secondary">
+                <i class="fa fa-refresh"></i> 重置
+              </button>
+            </div>
+          </div>
+
+          <!-- 数据展示区 -->
+          <div class="data-section">
+            <div id="workorderDataTable">
+              <table class="stats-table" id="workorderStatsTable">
+                <thead id="workorderStatsTableHead">
+                  <!-- 表头将通过JavaScript根据统计类型动态生成 -->
+                </thead>
+                <tbody id="workorderStatsTableBody">
+                  <!-- 数据将通过JavaScript根据统计类型动态生成 -->
+                </tbody>
+              </table>
+            </div>
+            
+            <div id="workorderNoData" class="no-data" style="display: none;">
+              <i class="fa fa-bar-chart"></i>
+              <h5>暂无统计数据</h5>
+              <p>请调整筛选条件后重试</p>
+            </div>
+          </div>
+
+          <!-- 操作区 -->
+          <div class="action-section">
+            <button id="exportWorkorderBtn" class="btn btn-primary export-btn">
+              <i class="fa fa-download"></i> 导出Excel
+            </button>
+            <button id="saveWorkorderTemplateBtn" class="btn btn-outline-secondary save-template-btn">
+              <i class="fa fa-save"></i> 保存查询模板
+            </button>
+          </div>
+        </div>
+
+        <!-- 回访统计 -->
+        <div class="tab-pane fade" id="visit-stats" role="tabpanel" aria-labelledby="visit-stats-tab">
+          <!-- 筛选区 -->
+          <div class="filter-section">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label for="visitDateRange">回访日期范围（默认全部）</label>
+                <div class="input-group">
+                  <input type="date" id="visitStartDate" class="form-control" value="">
+                  <span class="input-group-text">至</span>
+                  <input type="date" id="visitEndDate" class="form-control" value="">
+                </div>
+              </div>
+              <div class="filter-group">
+                <label for="visitFilter">护理员筛选</label>
+                <select id="visitFilter" class="form-select">
+                  <option value="all">全部护理员</option>
+                  <option value="caregiver1">李护理</option>
+                  <option value="caregiver2">王护理</option>
+                  <option value="caregiver3">张护理</option>
+                </select>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button id="visitSearchBtn" class="btn btn-primary">
+                <i class="fa fa-search"></i> 查询
+              </button>
+              <button id="visitResetBtn" class="btn btn-outline-secondary">
+                <i class="fa fa-refresh"></i> 重置
+              </button>
+            </div>
+          </div>
+
+          <!-- 数据展示区 -->
+          <div class="data-section">
+            <div id="visitChartContainer" class="chart-container">
+              <div class="chart-toggle">
+                <button id="hideVisitChartBtn" class="btn btn-sm btn-outline-secondary">
+                  <i class="fa fa-line-chart"></i> 隐藏图表
+                </button>
+              </div>
+              <canvas id="visitChart"></canvas>
+            </div>
+            
+            <div id="visitDataTable">
+              <table class="stats-table" id="visitStatsTable">
+                <thead id="visitStatsTableHead">
+                  <!-- 表头将通过JavaScript根据数据动态生成 -->
+                </thead>
+                <tbody id="visitStatsTableBody">
+                  <!-- 数据将通过JavaScript根据数据动态生成 -->
+                </tbody>
+              </table>
+            </div>
+            
+            <div id="visitNoData" class="no-data" style="display: none;">
+              <i class="fa fa-bar-chart"></i>
+              <h5>暂无统计数据</h5>
+              <p>请调整筛选条件后重试</p>
+            </div>
+          </div>
+
+          <!-- 操作区 -->
+          <div class="action-section">
+            <button id="exportVisitBtn" class="btn btn-primary export-btn">
+              <i class="fa fa-download"></i> 导出Excel
+            </button>
+            <button id="saveVisitTemplateBtn" class="btn btn-outline-secondary save-template-btn">
+              <i class="fa fa-save"></i> 保存查询模板
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 详情模态框 -->
+  <div class="modal fade detail-modal" id="detailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="detailModalTitle">重度失能人员详情</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="detailModalBody">
+          <!-- 动态加载详情数据 -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+          <button type="button" class="btn btn-primary" id="exportDetailBtn">导出详单</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 保存模板模态框 -->
+  <div class="modal fade" id="saveTemplateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">保存查询模板</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="templateName" class="form-label">模板名称</label>
+            <input type="text" class="form-control" id="templateName" placeholder="请输入模板名称">
+          </div>
+          <div class="mb-3">
+            <label for="templateDesc" class="form-label">模板描述（可选）</label>
+            <textarea class="form-control" id="templateDesc" rows="2" placeholder="请输入模板描述"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" id="confirmSaveTemplateBtn">确认保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示模态框 -->
+  <div class="modal fade" id="promptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-body text-center py-4">
+        <i class="fa fa-info-circle text-primary" style="font-size: 36px; margin-bottom: 15px;"></i>
+        <h5 class="modal-title" id="promptTitle">操作提示</h5>
+        <p class="text-muted" id="promptMsg">操作成功！</p>
+        <button type="button" class="btn btn-primary mt-3" data-bs-dismiss="modal">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    $(function() {
+      // 初始化模态框
+      const detailModal = new bootstrap.Modal('#detailModal');
+      const saveTemplateModal = new bootstrap.Modal('#saveTemplateModal');
+      const promptModal = new bootstrap.Modal('#promptModal');
+      
+      // 当前激活的标签页
+      let activeTab = 'object-stats';
+      // 当前保存模板的类型
+      let currentTemplateType = '';
+      
+      // 初始化图表
+      initCharts();
+      
+      // 加载保存的模板
+      loadTemplates();
+      
+      // 标签页切换事件
+      $('#statsTabs button').click(function() {
+        activeTab = $(this).data('bs-target').substring(1);
+        // 切换标签页时更新页面标题
+        const tabName = $(this).text();
+        $('.page-title').text(`${tabName} - 统计分析`);
+        
+        // 如果是工单统计或回访统计，确保图表正确显示
+        if (activeTab === 'visit-stats') {
+          setTimeout(() => {
+            if (window.visitChart) {
+              window.visitChart.resize();
+            }
+          }, 100);
+        }
+        
+        // 如果是工单统计，初始化表格
+        if (activeTab === 'workorder-stats') {
+          setTimeout(() => {
+            searchData('workorder');
+          }, 100);
+        }
+      });
+      
+      // 查询按钮事件（各模块）
+      $('#objectSearchBtn').click(function() {
+        searchData('object');
+      });
+      
+      $('#assessmentSearchBtn').click(function() {
+        searchData('assessment');
+      });
+      
+      $('#workorderSearchBtn').click(function() {
+        searchData('workorder');
+      });
+      
+      $('#visitSearchBtn').click(function() {
+        searchData('visit');
+      });
+      
+      // 重置按钮事件（各模块）
+      $('#objectResetBtn').click(function() {
+        resetFilter('object');
+      });
+      
+      $('#assessmentResetBtn').click(function() {
+        resetFilter('assessment');
+      });
+      
+      $('#workorderResetBtn').click(function() {
+        resetFilter('workorder');
+      });
+      
+      $('#visitResetBtn').click(function() {
+        resetFilter('visit');
+      });
+      
+      // 图表显示/隐藏切换
+      $('#showObjectChartBtn').click(function() {
+        toggleChart('object', true);
+      });
+      
+      $('#hideObjectChartBtn').click(function() {
+        toggleChart('object', false);
+      });
+      
+      $('#showAssessmentChartBtn').click(function() {
+        toggleChart('assessment', true);
+      });
+      
+      $('#hideAssessmentChartBtn').click(function() {
+        toggleChart('assessment', false);
+      });
+      
+      // 工单统计维度变化时重新渲染
+      $('#workorderDimension').change(function() {
+        if (activeTab === 'workorder-stats') {
+          searchData('workorder');
+        }
+      });
+      
+      $('#showVisitChartBtn').click(function() {
+        toggleChart('visit', true);
+      });
+      
+      $('#hideVisitChartBtn').click(function() {
+        toggleChart('visit', false);
+      });
+      
+      // 保存模板按钮事件
+      $('#saveObjectTemplateBtn').click(function() {
+        currentTemplateType = 'object';
+        showSaveTemplateModal('服务对象统计');
+      });
+      
+      $('#saveAssessmentTemplateBtn').click(function() {
+        currentTemplateType = 'assessment';
+        showSaveTemplateModal('评估质量统计');
+      });
+      
+      $('#saveWorkorderTemplateBtn').click(function() {
+        currentTemplateType = 'workorder';
+        showSaveTemplateModal('工单统计');
+      });
+      
+      $('#saveVisitTemplateBtn').click(function() {
+        currentTemplateType = 'visit';
+        showSaveTemplateModal('回访统计');
+      });
+      
+      
+      // 确认保存模板
+      $('#confirmSaveTemplateBtn').click(function() {
+        saveTemplate();
+      });
+      
+      // 模板选择事件
+      $('#templateSelect').change(function() {
+        const templateId = $(this).val();
+        if (templateId) {
+          loadTemplate(templateId);
+          $('#deleteTemplateBtn').prop('disabled', false);
+        } else {
+          $('#deleteTemplateBtn').prop('disabled', true);
+        }
+      });
+      
+      // 删除模板按钮事件
+      $('#deleteTemplateBtn').click(function() {
+        const templateId = $('#templateSelect').val();
+        if (templateId && confirm('确定要删除该模板吗？')) {
+          deleteTemplate(templateId);
+        }
+      });
+      
+      // 导出Excel按钮事件
+      $('#exportObjectBtn').click(function() {
+        exportToExcel('object', '服务对象统计');
+      });
+      
+      $('#exportAssessmentBtn').click(function() {
+        exportToExcel('assessment', '评估质量统计');
+      });
+      
+      $('#exportWorkorderBtn').click(function() {
+        exportToExcel('workorder', '工单统计');
+      });
+      
+      $('#exportVisitBtn').click(function() {
+        exportToExcel('visit', '回访统计');
+      });
+      
+      // 导出详情按钮事件
+      $('#exportDetailBtn').click(function() {
+        exportDetailToExcel();
+      });
+      
+      // 详情链接点击事件
+      $('.detail-link').click(function() {
+        const type = $(this).data('type');
+        const region = $(this).data('region');
+        showDetailModal(type, region);
+      });
+      
+      // 渲染工单统计表格（根据不同类型显示不同内容）
+      function renderWorkorderStatsTable(dimension, data) {
+        const thead = $('#workorderStatsTableHead');
+        const tbody = $('#workorderStatsTableBody');
+        
+        thead.empty();
+        tbody.empty();
+        
+        if (!data || data.length === 0) {
+          tbody.html('<tr><td colspan="10" class="text-center text-muted">暂无数据</td></tr>');
+          return;
+        }
+        
+        // 根据统计维度生成不同的表头和数据
+        switch(dimension) {
+          case 'overtime':
+            // 超时服务统计
+            thead.html(`
+              <tr>
+                <th>月份</th>
+                <th>护理员</th>
+                <th>服务对象</th>
+                <th>应享受服务时长(小时)</th>
+                <th>实际享受服务时长(小时)</th>
+                <th>时差(小时)</th>
+              </tr>
+            `);
+            data.forEach(item => {
+              const caregiverId = item.caregiverId || '';
+              const objId = item.objId || '';
+              const caregiverLinks = caregiverId ? `
+                <span class="action-links">
+                  <a href="javascript:void(0)" class="caregiver-detail-link" data-id="${caregiverId}" title="查看详情"><i class="fa fa-info-circle"></i></a>
+                  <a href="javascript:void(0)" class="caregiver-archive-link" data-id="${caregiverId}" title="查看档案"><i class="fa fa-folder-open"></i></a>
+                </span>
+              ` : '';
+              const objLinks = objId ? `
+                <span class="action-links">
+                  <a href="javascript:void(0)" class="obj-detail-link" data-id="${objId}" title="查看详情"><i class="fa fa-info-circle"></i></a>
+                  <a href="javascript:void(0)" class="obj-archive-link" data-id="${objId}" title="查看档案"><i class="fa fa-folder-open"></i></a>
+                </span>
+              ` : '';
+              
+              tbody.append(`
+                <tr>
+                  <td>${item.month || ''}</td>
+                  <td>
+                    ${item.caregiver || ''}
+                    ${caregiverLinks}
+                  </td>
+                  <td>
+                    ${item.serviceObject || ''}
+                    ${objLinks}
+                  </td>
+                  <td>${item.planHour || item.expectedHour || ''}</td>
+                  <td>${item.workHour || item.actualHour || ''}</td>
+                  <td class="danger">${item.overtimeHour || item.timeDiff || ''}</td>
+                </tr>
+              `);
+            });
+            break;
+            
+          case 'underService':
+            // 服务不足统计
+            thead.html(`
+              <tr>
+                <th>月份</th>
+                <th>护理员</th>
+                <th>服务对象</th>
+                <th>应享受服务时长(小时)</th>
+                <th>实际享受服务时长(小时)</th>
+                <th>时差(小时)</th>
+              </tr>
+            `);
+            data.forEach(item => {
+              const caregiverId = item.caregiverId || '';
+              const objId = item.objId || '';
+              const caregiverLinks = caregiverId ? `
+                <span class="action-links">
+                  <a href="javascript:void(0)" class="caregiver-detail-link" data-id="${caregiverId}" title="查看详情"><i class="fa fa-info-circle"></i></a>
+                  <a href="javascript:void(0)" class="caregiver-archive-link" data-id="${caregiverId}" title="查看档案"><i class="fa fa-folder-open"></i></a>
+                </span>
+              ` : '';
+              const objLinks = objId ? `
+                <span class="action-links">
+                  <a href="javascript:void(0)" class="obj-detail-link" data-id="${objId}" title="查看详情"><i class="fa fa-info-circle"></i></a>
+                  <a href="javascript:void(0)" class="obj-archive-link" data-id="${objId}" title="查看档案"><i class="fa fa-folder-open"></i></a>
+                </span>
+              ` : '';
+              
+              tbody.append(`
+                <tr>
+                  <td>${item.month || ''}</td>
+                  <td>
+                    ${item.caregiver || ''}
+                    ${caregiverLinks}
+                  </td>
+                  <td>
+                    ${item.serviceObject || ''}
+                    ${objLinks}
+                  </td>
+                  <td>${item.planHour || item.expectedHour || ''}</td>
+                  <td>${item.workHour || item.actualHour || ''}</td>
+                  <td class="danger">${item.shortHour || item.timeDiff || ''}</td>
+                </tr>
+              `);
+            });
+            break;
+            
+          case 'workingHours':
+            // 服务工时统计
+            thead.html(`
+              <tr>
+                <th>护理员</th>
+                <th>总工时(小时)</th>
+                <th>完成工时(小时)</th>
+                <th>剩余工时(小时)</th>
+              </tr>
+            `);
+            let totalRow = { caregiver: '总计', totalHour: 0, completedHour: 0, remainHour: 0 };
+            data.forEach(item => {
+              tbody.append(`
+                <tr>
+                  <td>${item.caregiver}</td>
+                  <td>${item.totalHour}</td>
+                  <td>${item.completedHour}</td>
+                  <td>${item.remainHour}</td>
+                </tr>
+              `);
+              totalRow.totalHour += item.totalHour;
+              totalRow.completedHour += item.completedHour;
+              totalRow.remainHour += item.remainHour;
+            });
+            tbody.append(`
+              <tr class="summary-row">
+                <td>${totalRow.caregiver}</td>
+                <td>${totalRow.totalHour}</td>
+                <td>${totalRow.completedHour}</td>
+                <td>${totalRow.remainHour}</td>
+              </tr>
+            `);
+            break;
+            
+          case 'abnormal':
+            // 异常工单统计
+            thead.html(`
+              <tr>
+                <th>护理员</th>
+                <th>服务对象</th>
+                <th>计划起止时间</th>
+                <th>实际起止时间</th>
+              </tr>
+            `);
+            data.forEach(item => {
+              const caregiverId = item.caregiverId || '';
+              const objId = item.objId || '';
+              const caregiverLinks = caregiverId ? `
+                <span class="action-links">
+                  <a href="javascript:void(0)" class="caregiver-detail-link" data-id="${caregiverId}" title="查看详情"><i class="fa fa-info-circle"></i></a>
+                  <a href="javascript:void(0)" class="caregiver-archive-link" data-id="${caregiverId}" title="查看档案"><i class="fa fa-folder-open"></i></a>
+                </span>
+              ` : '';
+              const objLinks = objId ? `
+                <span class="action-links">
+                  <a href="javascript:void(0)" class="obj-detail-link" data-id="${objId}" title="查看详情"><i class="fa fa-info-circle"></i></a>
+                  <a href="javascript:void(0)" class="obj-archive-link" data-id="${objId}" title="查看档案"><i class="fa fa-folder-open"></i></a>
+                </span>
+              ` : '';
+              
+              tbody.append(`
+                <tr>
+                  <td>
+                    ${item.caregiver || ''}
+                    ${caregiverLinks}
+                  </td>
+                  <td>
+                    ${item.serviceObject || ''}
+                    ${objLinks}
+                  </td>
+                  <td>${item.planStartTime || ''} - ${item.planEndTime || ''}</td>
+                  <td>${item.actualStartTime || ''} - ${item.actualEndTime || ''}</td>
+                </tr>
+              `);
+            });
+            break;
+        }
+      }
+      
+      // 初始化图表
+      function initCharts() {
+        // 回访统计图表
+        const visitCtx = document.getElementById('visitChart').getContext('2d');
+        window.visitChart = new Chart(visitCtx, {
+          type: 'line',
+          data: {
+            labels: ['李护理', '王护理', '张护理'],
+            datasets: [{
+              label: '回访率',
+              data: [93.33, 92.11, 92.86],
+              borderColor: '#1890FF',
+              backgroundColor: 'rgba(24, 144, 255, 0.1)',
+              tension: 0.3,
+              fill: true
+            }, {
+              label: '满意率',
+              data: [66.67, 62.86, 64.10],
+              borderColor: '#FAAD14',
+              backgroundColor: 'rgba(250, 173, 20, 0.1)',
+              tension: 0.3,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'top',
+              },
+              title: {
+                display: true,
+                text: '护理员回访满意率统计'
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                title: {
+                  display: true,
+                  text: '百分比(%)'
+                }
+              }
+            }
+          }
+        });
+      }
+      
+      // 切换图表显示/隐藏
+      function toggleChart(type, show) {
+        const chartContainer = $(`#${type}ChartContainer`);
+        const showBtn = $(`#show${type.charAt(0).toUpperCase() + type.slice(1)}ChartBtn`);
+        const hideBtn = $(`#hide${type.charAt(0).toUpperCase() + type.slice(1)}ChartBtn`);
+        
+        if (show) {
+          chartContainer.show();
+          if (window[`${type}Chart`]) {
+            window[`${type}Chart`].resize();
+          }
+          if (showBtn) showBtn.hide();
+          if (hideBtn) hideBtn.show();
+        } else {
+          chartContainer.hide();
+          if (showBtn) showBtn.show();
+          if (hideBtn) hideBtn.hide();
+        }
+      }
+      
+      // 回访统计分类数据（数据驱动）
+      let visitCategories = ['满意', '一般', '不满意']; // 可以从后端获取
+      
+      // 渲染回访统计表格（数据驱动）
+      function renderVisitStatsTable(data) {
+        const thead = $('#visitStatsTableHead');
+        const tbody = $('#visitStatsTableBody');
+        
+        thead.empty();
+        tbody.empty();
+        
+        // 动态生成表头
+        let headerRow = '<tr><th>护理员</th><th>实际服务人数</th><th>总回访人数</th>';
+        visitCategories.forEach(category => {
+          headerRow += `<th>${category}</th>`;
+        });
+        headerRow += '<th>回访率</th><th>满意率</th></tr>';
+        thead.html(headerRow);
+        
+        // 动态生成数据行
+        if (data && data.length > 0) {
+          let totalRow = {
+            caregiver: '总计',
+            serviceCount: 0,
+            visitCount: 0,
+            categories: {},
+            visitRate: 0,
+            satisfactionRate: 0
+          };
+          
+          data.forEach(item => {
+            let row = '<tr>';
+            row += `<td>${item.caregiver}</td>`;
+            row += `<td>${item.serviceCount}</td>`;
+            row += `<td>${item.visitCount}</td>`;
+            
+            visitCategories.forEach(category => {
+              const count = item.categories[category] || 0;
+              const cellClass = category === '不满意' ? 'danger' : '';
+              row += `<td class="${cellClass}">${count}</td>`;
+              
+              // 累计总计
+              if (!totalRow.categories[category]) {
+                totalRow.categories[category] = 0;
+              }
+              totalRow.categories[category] += count;
+            });
+            
+            row += `<td>${item.visitRate}%</td>`;
+            row += `<td>${item.satisfactionRate}%</td>`;
+            row += '</tr>';
+            tbody.append(row);
+            
+            // 累计总计
+            totalRow.serviceCount += item.serviceCount;
+            totalRow.visitCount += item.visitCount;
+          });
+          
+          // 计算总计行
+          totalRow.visitRate = totalRow.serviceCount > 0 ? 
+            ((totalRow.visitCount / totalRow.serviceCount) * 100).toFixed(2) : '0.00';
+          
+          const satisfiedCount = totalRow.categories['满意'] || 0;
+          totalRow.satisfactionRate = totalRow.visitCount > 0 ? 
+            ((satisfiedCount / totalRow.visitCount) * 100).toFixed(2) : '0.00';
+          
+          // 添加总计行
+          let totalRowHtml = '<tr class="summary-row">';
+          totalRowHtml += `<td>${totalRow.caregiver}</td>`;
+          totalRowHtml += `<td>${totalRow.serviceCount}</td>`;
+          totalRowHtml += `<td>${totalRow.visitCount}</td>`;
+          
+          visitCategories.forEach(category => {
+            const count = totalRow.categories[category] || 0;
+            const cellClass = category === '不满意' ? 'danger' : '';
+            totalRowHtml += `<td class="${cellClass}">${count}</td>`;
+          });
+          
+          totalRowHtml += `<td>${totalRow.visitRate}%</td>`;
+          totalRowHtml += `<td>${totalRow.satisfactionRate}%</td>`;
+          totalRowHtml += '</tr>';
+          tbody.append(totalRowHtml);
+        } else {
+          tbody.html('<tr><td colspan="' + (3 + visitCategories.length + 2) + '" class="text-center text-muted">暂无数据</td></tr>');
+        }
+      }
+      
+      // 搜索数据（模拟）
+      function searchData(type) {
+        // 显示加载中状态
+        $(`#${type}DataTable`).hide();
+        $(`#${type}NoData`).hide();
+        
+        // 模拟加载延迟
+        setTimeout(() => {
+          // 随机决定是否有数据
+          const hasData = Math.random() > 0.2;
+          
+          if (hasData) {
+            $(`#${type}DataTable`).show();
+            
+            // 如果是回访统计，使用数据驱动渲染
+            if (type === 'visit') {
+              // 模拟数据（实际应从后端获取）
+              const visitData = [
+                {
+                  caregiver: '李护理',
+                  serviceCount: 45,
+                  visitCount: 42,
+                  categories: { '满意': 40, '一般': 1, '不满意': 1 },
+                  visitRate: '93.33',
+                  satisfactionRate: '95.24'
+                },
+                {
+                  caregiver: '王护理',
+                  serviceCount: 38,
+                  visitCount: 35,
+                  categories: { '满意': 32, '一般': 2, '不满意': 1 },
+                  visitRate: '92.11',
+                  satisfactionRate: '91.43'
+                },
+                {
+                  caregiver: '张护理',
+                  serviceCount: 42,
+                  visitCount: 39,
+                  categories: { '满意': 36, '一般': 2, '不满意': 1 },
+                  visitRate: '92.86',
+                  satisfactionRate: '92.31'
+                }
+              ];
+              renderVisitStatsTable(visitData);
+              
+              // 刷新图表
+              if (window.visitChart) {
+                window.visitChart.update();
+              }
+            }
+            
+            // 如果是工单统计，根据类型渲染不同表格
+            if (type === 'workorder') {
+              const dimension = $('#workorderDimension').val();
+              let workorderData = [];
+              
+              // 根据统计维度生成不同的模拟数据
+              switch(dimension) {
+                case 'overtime':
+                  workorderData = [
+                    { month: '2025-10', caregiver: '李护理', caregiverId: 1, serviceObject: '张三', objId: 1, expectedHour: 2.0, actualHour: 2.5, timeDiff: 0.5 },
+                    { month: '2025-10', caregiver: '王护理', caregiverId: 2, serviceObject: '李四', objId: 2, expectedHour: 2.5, actualHour: 3.0, timeDiff: 0.5 },
+                    { month: '2025-10', caregiver: '张护理', caregiverId: 3, serviceObject: '王五', objId: 3, expectedHour: 2.0, actualHour: 2.8, timeDiff: 0.8 }
+                  ];
+                  break;
+                case 'underService':
+                  workorderData = [
+                    { month: '2025-10', caregiver: '张护理', caregiverId: 3, serviceObject: '王五', objId: 3, expectedHour: 2.0, actualHour: 1.5, timeDiff: -0.5 },
+                    { month: '2025-10', caregiver: '刘护理', caregiverId: 4, serviceObject: '赵六', objId: 4, expectedHour: 2.5, actualHour: 2.0, timeDiff: -0.5 },
+                    { month: '2025-10', caregiver: '李护理', caregiverId: 1, serviceObject: '孙七', objId: 5, expectedHour: 2.0, actualHour: 1.2, timeDiff: -0.8 }
+                  ];
+                  break;
+                case 'workingHours':
+                  workorderData = [
+                    { caregiver: '李护理', totalHour: 200, completedHour: 168, remainHour: 32 },
+                    { caregiver: '王护理', totalHour: 180, completedHour: 152, remainHour: 28 },
+                    { caregiver: '张护理', totalHour: 165, completedHour: 138, remainHour: 27 },
+                    { caregiver: '刘护理', totalHour: 175, completedHour: 145, remainHour: 30 }
+                  ];
+                  break;
+                case 'abnormal':
+                  workorderData = [
+                    { caregiver: '李护理', caregiverId: 1, serviceObject: '张三', objId: 1, planStartTime: '2025-10-15 08:00', planEndTime: '2025-10-15 10:00', actualStartTime: '2025-10-15 08:00', actualEndTime: '2025-10-15 10:30' },
+                    { caregiver: '王护理', caregiverId: 2, serviceObject: '李四', objId: 2, planStartTime: '2025-10-16 14:00', planEndTime: '2025-10-16 16:30', actualStartTime: '2025-10-16 14:15', actualEndTime: '2025-10-16 16:00' },
+                    { caregiver: '张护理', caregiverId: 3, serviceObject: '王五', objId: 3, planStartTime: '2025-10-17 09:00', planEndTime: '2025-10-17 11:00', actualStartTime: '2025-10-17 09:30', actualEndTime: '2025-10-17 10:30' }
+                  ];
+                  break;
+              }
+              
+              renderWorkorderStatsTable(dimension, workorderData);
+            }
+          } else {
+            $(`#${type}NoData`).show();
+          }
+          
+          // 显示提示信息
+          showPrompt('查询成功', '数据已更新');
+        }, 800);
+      }
+      
+      // 初始化回访统计表格
+      renderVisitStatsTable([]);
+      
+      // 重置筛选条件
+      function resetFilter(type) {
+        switch(type) {
+          case 'object':
+            $('#objectRegion').val('all');
+            break;
+          case 'assessment':
+            $('#assessmentStartDate').val('2025-01-01');
+            $('#assessmentEndDate').val('2025-12-31');
+            $('#assessmentDimension').val('assessor');
+            $('#assessmentFilter').val('all');
+            $('#genderStats').prop('checked', false);
+            break;
+          case 'workorder':
+            $('#workorderMonth').val('2025-10');
+            $('#workorderDimension').val('overtime');
+            $('#workorderFilter').val('all');
+            break;
+          case 'visit':
+            $('#visitStartDate').val('');
+            $('#visitEndDate').val('');
+            $('#visitFilter').val('all');
+            break;
+        }
+      }
+      
+      // 显示保存模板模态框
+      function showSaveTemplateModal(defaultName) {
+        $('#templateName').val(defaultName + ' - ' + new Date().format('yyyy-MM-dd'));
+        $('#templateDesc').val('');
+        saveTemplateModal.show();
+      }
+      
+      // 保存模板
+      function saveTemplate() {
+        const templateName = $('#templateName').val().trim();
+        const templateDesc = $('#templateDesc').val().trim();
+        
+        if (!templateName) {
+          alert('请输入模板名称');
+          return;
+        }
+        
+        // 获取当前筛选条件
+        let filterData = {};
+        
+        switch(currentTemplateType) {
+          case 'object':
+            filterData = {
+              region: $('#objectRegion').val()
+            };
+            break;
+          case 'assessment':
+            filterData = {
+              startDate: $('#assessmentStartDate').val(),
+              endDate: $('#assessmentEndDate').val(),
+              dimension: $('#assessmentDimension').val(),
+              filter: $('#assessmentFilter').val(),
+              genderStats: $('#genderStats').prop('checked')
+            };
+            break;
+          case 'workorder':
+            filterData = {
+              month: $('#workorderMonth').val(),
+              dimension: $('#workorderDimension').val(),
+              filter: $('#workorderFilter').val()
+            };
+            break;
+          case 'visit':
+            filterData = {
+              startDate: $('#visitStartDate').val(),
+              endDate: $('#visitEndDate').val(),
+              filter: $('#visitFilter').val()
+            };
+            break;
+        }
+        
+        // 保存到localStorage
+        const templateId = 'template_' + new Date().getTime();
+        const template = {
+          id: templateId,
+          name: templateName,
+          desc: templateDesc,
+          type: currentTemplateType,
+          filterData: filterData,
+          createTime: new Date().format('yyyy-MM-dd HH:mm:ss')
+        };
+        
+        // 获取已保存的模板
+        let templates = JSON.parse(localStorage.getItem('statsTemplates') || '[]');
+        templates.push(template);
+        
+        // 保存到localStorage
+        localStorage.setItem('statsTemplates', JSON.stringify(templates));
+        
+        // 关闭模态框
+        saveTemplateModal.hide();
+        
+        // 刷新模板列表
+        loadTemplates();
+        
+        // 显示提示
+        showPrompt('保存成功', '查询模板已保存');
+      }
+      
+      // 加载模板列表
+      function loadTemplates() {
+        // 获取已保存的模板
+        let templates = JSON.parse(localStorage.getItem('statsTemplates')) || [];
+        
+        // 清空模板选择框
+        $('#templateSelect').empty();
+        $('#templateSelect').append('<option value="">-- 请选择模板 --</option>');
+        
+        // 添加模板选项
+        templates.forEach(template => {
+          $('#templateSelect').append(`
+            <option value="${template.id}">${template.name} (${template.type === 'object' ? '服务对象' : 
+                                 template.type === 'assessment' ? '评估质量' : 
+                                 template.type === 'workorder' ? '工单' : 
+                                 template.type === 'visit' ? '回访' : ''})</option>
+          `);
+        });
+        
+        // 如果没有模板，禁用删除按钮
+        if (templates.length === 0) {
+          $('#deleteTemplateBtn').prop('disabled', true);
+        }
+      }
+      
+      // 加载模板
+      function loadTemplate(templateId) {
+        // 获取已保存的模板
+        let templates = JSON.parse(localStorage.getItem('statsTemplates')) || [];
+        const template = templates.find(t => t.id === templateId);
+        
+        if (template) {
+          // 切换到对应的标签页
+          activeTab = template.type + '-stats';
+          $(`#${template.type}-stats-tab`).click();
+          
+          // 填充筛选条件
+          const filterData = template.filterData;
+          
+          switch(template.type) {
+            case 'object':
+              $('#objectRegion').val(filterData.region);
+              // 执行查询
+              setTimeout(() => $('#objectSearchBtn').click(), 100);
+              break;
+            case 'assessment':
+              $('#assessmentStartDate').val(filterData.startDate);
+              $('#assessmentEndDate').val(filterData.endDate);
+              $('#assessmentDimension').val(filterData.dimension);
+              $('#assessmentFilter').val(filterData.filter);
+              $('#genderStats').prop('checked', filterData.genderStats);
+              // 执行查询
+              setTimeout(() => $('#assessmentSearchBtn').click(), 100);
+              break;
+            case 'workorder':
+              $('#workorderMonth').val(filterData.month);
+              $('#workorderDimension').val(filterData.dimension);
+              $('#workorderFilter').val(filterData.filter);
+              // 执行查询
+              setTimeout(() => $('#workorderSearchBtn').click(), 100);
+              break;
+          case 'visit':
+            $('#visitStartDate').val(filterData.startDate);
+            $('#visitEndDate').val(filterData.endDate);
+            $('#visitFilter').val(filterData.filter);
+            // 执行查询
+            setTimeout(() => $('#visitSearchBtn').click(), 100);
+            break;
+          }
+          
+          // 显示提示
+          showPrompt('模板加载成功', `已加载模板：${template.name}`);
+        }
+      }
+      
+      // 删除模板
+      function deleteTemplate(templateId) {
+        // 获取已保存的模板
+        let templates = JSON.parse(localStorage.getItem('statsTemplates') || '[]');
+        
+        // 确认删除
+        if (confirm('确定要删除这个模板吗？此操作不可撤销。')) {
+          templates = templates.filter(t => t.id !== templateId);
+          localStorage.setItem('statsTemplates', JSON.stringify(templates));
+          loadTemplates();
+          showPrompt('操作成功', '模板已成功删除');
+        }
+      }
+      
+      // 显示提示信息
+      function showPrompt(title, message) {
+        // 创建提示元素
+        const prompt = document.createElement('div');
+        prompt.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        prompt.innerHTML = `
+          <div class="bg-white rounded-lg p-4 max-w-sm w-full">
+            <h3 class="text-lg font-semibold mb-2">${title}</h3>
+            <p class="text-gray-700 mb-4">${message}</p>
+            <button class="prompt-close-btn bg-primary text-white px-4 py-2 rounded w-full">确定</button>
+          </div>
+        `;
+        
+        // 添加到页面
+        document.body.appendChild(prompt);
+        
+        // 点击关闭按钮移除提示
+        prompt.querySelector('.prompt-close-btn').addEventListener('click', function() {
+          prompt.remove();
+        });
+      }
+      
+      // 导出Excel功能
+      function exportToExcel(type, filename) {
+        const tableId = type + 'DataTable';
+        const table = document.getElementById(tableId);
+        if (!table) {
+          showPrompt('导出失败', '未找到要导出的数据');
+          return;
+        }
+        
+        try {
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.table_to_sheet(table);
+          XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+          XLSX.writeFile(wb, filename + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
+          showPrompt('导出成功', '数据已成功导出');
+        } catch (e) {
+          showPrompt('导出失败', '导出过程中发生错误：' + e.message);
+        }
+      }
+      
+      // 导出详情Excel
+      function exportDetailToExcel() {
+        showPrompt('导出提示', '详情数据导出功能开发中...');
+      }
+      
+      // 显示详情模态框
+      function showDetailModal(type, region) {
+        const title = type === 'heavyDisability' ? '重度失能人员详情' : '累计服务人员详情';
+        const regionName = region === 'all' ? '全部区域' : region;
+        $('#detailModalTitle').text(title + ' - ' + regionName);
+        $('#detailModalBody').html('<p>正在加载详情数据...</p>');
+        detailModal.show();
+      }
+      
+      // 服务对象详情和档案链接事件
+      $(document).on('click', '.obj-detail-link', function(e) {
+        e.stopPropagation();
+        const objId = parseInt($(this).data('id'));
+        // 这里可以跳转到服务对象详情页面或显示模态框
+        showPrompt('查看详情', `查看服务对象ID: ${objId} 的详情信息`);
+      });
+      
+      $(document).on('click', '.obj-archive-link', function(e) {
+        e.stopPropagation();
+        const objId = parseInt($(this).data('id'));
+        // 这里可以跳转到服务对象档案页面或显示模态框
+        showPrompt('查看档案', `查看服务对象ID: ${objId} 的档案信息`);
+      });
+      
+      // 护理员详情和档案链接事件
+      $(document).on('click', '.caregiver-detail-link', function(e) {
+        e.stopPropagation();
+        const caregiverId = parseInt($(this).data('id'));
+        // 这里可以跳转到护理员详情页面或显示模态框
+        showPrompt('查看详情', `查看护理员ID: ${caregiverId} 的详情信息`);
+      });
+      
+      $(document).on('click', '.caregiver-archive-link', function(e) {
+        e.stopPropagation();
+        const caregiverId = parseInt($(this).data('id'));
+        // 这里可以跳转到护理员档案页面或显示模态框
+        showPrompt('查看档案', `查看护理员ID: ${caregiverId} 的档案信息`);
+      });
+    });
+    </script>
+  </body>
+</html>

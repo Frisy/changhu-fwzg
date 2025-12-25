@@ -1,0 +1,943 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服务对象分配 - 服务管理</title>
+  <!-- 引入外部资源 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <style>
+    /* 继承全局样式 */
+    body { font-family: "微软雅黑", "思源黑体", sans-serif; background-color: #f5f7fa; color: #333; }
+    .btn-primary { background-color: #1890FF; border-color: #1890FF; }
+    .btn-primary:hover { background-color: #096DD9; border-color: #096DD9; }
+    .btn-outline-secondary { border-color: #ddd; color: #666; }
+    .btn-outline-secondary:hover { background-color: #f5f5f5; border-color: #ccc; }
+    .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .card-header { background: #fff; border-bottom: 1px solid #f0f0f0; border-radius: 12px 12px 0 0; padding: 15px 20px; font-weight: 600; font-size: 15px; }
+    .card-body { padding: 20px; }
+    /* 布局样式 */
+    .app-container { display: flex; min-height: 100vh; }
+    /* 侧边导航 */
+    .sidebar { width: 220px; background: #fff; box-shadow: 1px 0 2px rgba(0,0,0,0.05); padding: 20px 0; flex-shrink: 0; }
+    .sidebar-logo { text-align: center; padding: 0 20px 20px; border-bottom: 1px solid #f0f0f0; margin-bottom: 20px; }
+    .sidebar-logo img { height: 40px; margin-bottom: 8px; }
+    .sidebar-logo h3 { font-size: 16px; color: #1890FF; font-weight: 600; margin: 0; }
+    .nav-menu { list-style: none; padding: 0; margin: 0; }
+    .nav-item { margin-bottom: 4px; }
+    .nav-link { display: flex; align-items: center; padding: 12px 20px; color: #666; text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
+    .nav-link:hover, .nav-link.active { color: #1890FF; background-color: #f0f7ff; border-left: 3px solid #1890FF; }
+    .nav-link i { font-size: 18px; margin-right: 12px; width: 20px; text-align: center; }
+    .nav-group-title { padding: 15px 20px 5px; font-size: 12px; color: #999; font-weight: 500; }
+    /* 主内容区 */
+    .main-content { flex: 1; padding: 20px; overflow-y: auto; }
+    /* 顶部导航 */
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .page-title { font-size: 20px; font-weight: 600; color: #333; margin: 0; }
+    .user-info { display: flex; align-items: center; }
+    .notification { position: relative; margin-right: 20px; cursor: pointer; }
+    .notification i { font-size: 20px; color: #666; }
+    .notification-badge { position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; background: #FF4D4F; color: #fff; border-radius: 50%; font-size: 12px; text-align: center; line-height: 18px; }
+    .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #1890FF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; margin-right: 10px; }
+    .user-name { font-size: 14px; font-weight: 500; }
+
+    /* 服务对象分配页面专属样式 */
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; }
+    .filter-group { flex: 1; min-width: 150px; }
+    .filter-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    .filter-group input, .filter-group select { width: 100%; }
+    .action-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px; }
+    .assignment-table { width: 100%; border-collapse: collapse; }
+    .assignment-table th, .assignment-table td { border: 1px solid #f0f0f0; padding: 12px 15px; text-align: left; font-size: 13px; }
+    .assignment-table th { background-color: #f8f9fa; font-weight: 500; }
+    .assignment-table tbody tr:hover { background-color: #f9f9f9; }
+    .status-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+    .status-unassigned { background-color: #fff1f0; color: #FF4D4F; }
+    .status-assigned { background-color: #e6f7ef; color: #52C41A; }
+    .modal-body { padding: 20px; }
+    .form-group { margin-bottom: 20px; }
+    .form-label { font-weight: 500; margin-bottom: 8px; }
+    .input-group-append { cursor: pointer; }
+    .qr-scan-btn { display: flex; align-items: center; justify-content: center; padding: 0.375rem 0.75rem; }
+    .qr-scan-btn i { margin-right: 5px; }
+</style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 侧边导航 -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://via.placeholder.com/80x40?text=居家长护" alt="系统Logo">
+        <h3>服务主管工作平台</h3>
+      </div>
+      
+      <!-- 导航分组：统计分析 -->
+       <!-- 导航分组：看板管理（新增） -->
+       <div class="nav-group-title">看板管理</div>
+       <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="数据驾驶舱.html" class="nav-link">
+            <i class="fa fa-dashboard"></i>
+            <span>数据驾驶舱</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="index.html" class="nav-link">
+            <i class="fa fa-dashboard"></i>
+            <span>服务对象看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="总体统计.html" class="nav-link">
+            <i class="fa fa-bar-chart"></i>
+            <span>总体统计看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="流程管理.html" class="nav-link">
+            <i class="fa fa-sitemap"></i>
+            <span>流程管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="线上回访.html" class="nav-link">
+            <i class="fa fa-phone"></i>
+            <span>线上线下回访执行</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="服务对象分配.html" class="nav-link active">
+            <i class="fa fa-users"></i>
+            <span>服务对象分配</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="新增服务对象管理.html" class="nav-link">
+            <i class="fa fa-user-plus"></i>
+            <span>新增服务对象配置</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="首月服务计划管理.html" class="nav-link">
+            <i class="fa fa-calendar"></i>
+            <span>服务计划管理或打印</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="平台工单差异查询.html" class="nav-link">
+            <i class="fa fa-search"></i>
+            <span>医保工单差异查询</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="工单管理.html" class="nav-link">
+            <i class="fa fa-tasks"></i>
+            <span>工单管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="重点服务对象管理.html" class="nav-link">
+            <i class="fa fa-star"></i>
+            <span>重点服务对象管理</span>
+          </a>
+        </li>
+      </ul>
+      
+      <!-- 导航分组：系统设置 -->
+      <div class="nav-group-title">系统设置</div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#" class="nav-link" id="caregiverSettingsLink">
+            <i class="fa fa-cog"></i>
+            <span>护理员设置</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <!-- 顶部导航：标题 + 用户信息 -->
+      <div class="top-nav">
+        <h1 class="page-title">服务对象分配 - 服务管理</h1>
+        <div class="user-info">
+          <div class="notification">
+            <i class="fa fa-bell-o"></i>
+            <span class="notification-badge">2</span>
+          </div>
+          <div class="user-avatar">主</div>
+          <div class="user-name">服务主管</div>
+        </div>
+      </div>
+
+      <!-- 分配操作区 -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <span>快速分配</span>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <label class="form-label">选择护理员</label>
+              <select class="form-select" id="selectedCaregiver">
+                <option value="">请选择护理员（不选则取消分配）</option>
+                <option value="c1">李护理（杭州市西湖区）</option>
+                <option value="c2">王护理（杭州市拱墅区）</option>
+                <option value="c3">张护理（绍兴市越城区）</option>
+                <option value="c4">赵护理（绍兴市柯桥区）</option>
+                <option value="c5">孙护理（杭州市滨江区）</option>
+              </select>
+              <div class="form-text">选择护理员后，可批量分配服务对象</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">输入服务对象姓名</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="serviceObjectNameInput" placeholder="输入姓名自动搜索，支持模糊匹配">
+                <button class="btn btn-primary" id="addServiceObjectBtn" disabled>
+                  <i class="fa fa-plus"></i> 添加
+                </button>
+              </div>
+              <div id="nameSuggestions" class="mt-2" style="display: none;">
+                <!-- 姓名建议列表 -->
+              </div>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">&nbsp;</label>
+              <button class="btn btn-success w-100" id="batchAssignBtn" disabled>
+                <i class="fa fa-check"></i> 确认分配
+              </button>
+            </div>
+          </div>
+          <div class="mt-3" id="selectedObjectsList" style="display: none;">
+            <label class="form-label">待分配服务对象：</label>
+            <div id="selectedObjectsContainer" class="d-flex flex-wrap gap-2">
+              <!-- 选中的服务对象列表 -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 筛选区域 -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="filterName">姓名搜索</label>
+          <input type="text" class="form-control" id="filterName" placeholder="请输入服务对象姓名">
+        </div>
+        <div class="filter-group">
+          <label for="filterPublishStart">公示日期范围</label>
+          <div class="input-group">
+            <input type="date" class="form-control" id="filterPublishStart" value="2024-07-01">
+            <span class="input-group-text">至</span>
+            <input type="date" class="form-control" id="filterPublishEnd" value="2024-09-30">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label for="filterDisabilityLevel">失能等级</label>
+          <select class="form-select" id="filterDisabilityLevel">
+            <option value="all">全部等级</option>
+            <option value="一级">一级</option>
+            <option value="二级">二级</option>
+            <option value="三级">三级</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filterRegion">所属区域</label>
+          <select class="form-select" id="filterRegion">
+            <option value="all">全部区域</option>
+            <option value="杭州市西湖区">杭州市西湖区</option>
+            <option value="杭州市拱墅区">杭州市拱墅区</option>
+            <option value="杭州市滨江区">杭州市滨江区</option>
+            <option value="绍兴市越城区">绍兴市越城区</option>
+            <option value="绍兴市柯桥区">绍兴市柯桥区</option>
+          </select>
+        </div>
+        <div class="filter-group" style="align-self: flex-end;">
+          <button class="btn btn-primary" id="filterBtn">
+            <i class="fa fa-filter"></i> 筛选
+          </button>
+          <button class="btn btn-outline-secondary" id="resetFilterBtn">
+            <i class="fa fa-refresh"></i> 重置
+          </button>
+        </div>
+      </div>
+
+      <!-- 服务对象列表 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <span>服务对象列表（医保公示通过且重度失能）</span>
+            <span class="text-muted" id="totalCount">共 <strong>8</strong> 条记录</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="assignment-table">
+              <thead>
+                <tr>
+                  <th>姓名</th>
+                  <th>地址</th>
+                  <th>失能等级</th>
+                  <th>公示日期</th>
+                  <th>所属区域</th>
+                  <th>当前护理员</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="objectListBody">
+                <tr>
+                  <td>陈一</td>
+                  <td>杭州市西湖区XX路123号</td>
+                  <td>一级</td>
+                  <td>2024-08-15</td>
+                  <td>杭州市西湖区</td>
+                  <td><span class="status-badge status-unassigned">未分配</span></td>
+                  <td>
+                    <button class="btn btn-primary btn-sm quick-assign-btn" 
+                            data-id="1" 
+                            data-name="陈一" 
+                            data-address="杭州市西湖区XX路123号"
+                            data-publish-date="2024-08-15" 
+                            data-region="杭州市西湖区">
+                      快速分配
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm view-record-btn" data-id="1">
+                      查看记录
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>吴二</td>
+                  <td>杭州市拱墅区XX路456号</td>
+                  <td>二级</td>
+                  <td>2024-08-20</td>
+                  <td>杭州市拱墅区</td>
+                  <td><span class="status-badge status-assigned">李护理</span></td>
+                  <td>
+                    <button class="btn btn-primary btn-sm quick-assign-btn" 
+                            data-id="2" 
+                            data-name="吴二" 
+                            data-address="杭州市拱墅区XX路456号"
+                            data-publish-date="2024-08-20" 
+                            data-region="杭州市拱墅区"
+                            data-current-caregiver="李护理">
+                      快速分配
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm view-record-btn" data-id="2">
+                      查看记录
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>郑三</td>
+                  <td>绍兴市越城区XX路789号</td>
+                  <td>三级</td>
+                  <td>2024-08-10</td>
+                  <td>绍兴市越城区</td>
+                  <td><span class="status-badge status-unassigned">未分配</span></td>
+                  <td>
+                    <button class="btn btn-primary btn-sm quick-assign-btn" 
+                            data-id="3" 
+                            data-name="郑三" 
+                            data-address="绍兴市越城区XX路789号"
+                            data-publish-date="2024-08-10" 
+                            data-region="绍兴市越城区">
+                      快速分配
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm view-record-btn" data-id="3">
+                      查看记录
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>钱五</td>
+                  <td>绍兴市柯桥区XX路321号</td>
+                  <td>一级</td>
+                  <td>2024-07-25</td>
+                  <td>绍兴市柯桥区</td>
+                  <td><span class="status-badge status-assigned">王护理</span></td>
+                  <td>
+                    <button class="btn btn-primary btn-sm quick-assign-btn" 
+                            data-id="4" 
+                            data-name="钱五" 
+                            data-address="绍兴市柯桥区XX路321号"
+                            data-publish-date="2024-07-25" 
+                            data-region="绍兴市柯桥区"
+                            data-current-caregiver="王护理">
+                      快速分配
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm view-record-btn" data-id="4">
+                      查看记录
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>冯四</td>
+                  <td>杭州市滨江区XX路654号</td>
+                  <td>二级</td>
+                  <td>2024-09-05</td>
+                  <td>杭州市滨江区</td>
+                  <td><span class="status-badge status-unassigned">未分配</span></td>
+                  <td>
+                    <button class="btn btn-primary btn-sm quick-assign-btn" 
+                            data-id="5" 
+                            data-name="冯四" 
+                            data-address="杭州市滨江区XX路654号"
+                            data-publish-date="2024-09-05" 
+                            data-region="杭州市滨江区">
+                      快速分配
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm view-record-btn" data-id="5">
+                      查看记录
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- 分页控件（模拟） -->
+          <nav aria-label="Page navigation" class="mt-3">
+            <ul class="pagination justify-content-center">
+              <li class="page-item disabled"><a class="page-link" href="#">上一页</a></li>
+              <li class="page-item active"><a class="page-link" href="#">1</a></li>
+              <li class="page-item"><a class="page-link" href="#">2</a></li>
+              <li class="page-item"><a class="page-link" href="#">下一页</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分配护理员模态框 -->
+  <div class="modal fade" id="assignmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">分配护理员 - 陈一</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="assignmentForm">
+            <input type="hidden" id="objectId">
+            <input type="hidden" id="publishDate">
+            <div class="form-group">
+              <label for="caregiverId" class="form-label">护理员</label>
+              <select class="form-select" id="caregiverId" required>
+                <option value="">请选择护理员</option>
+                <option value="c1">李护理（杭州市西湖区）</option>
+                <option value="c2">王护理（杭州市拱墅区）</option>
+                <option value="c3">张护理（绍兴市越城区）</option>
+                <option value="c4">赵护理（绍兴市柯桥区）</option>
+                <option value="c5">孙护理（杭州市滨江区）</option>
+              </select>
+              <div class="form-text">仅显示您管理的、状态正常的护理员</div>
+            </div>
+            <div class="form-group">
+              <label for="beaconMac" class="form-label">信标MAC地址</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="beaconMac" placeholder="请输入信标MAC地址" required>
+                <button class="btn btn-outline-secondary qr-scan-btn" type="button" id="scanQrBtn">
+                  <i class="fa fa-qrcode"></i> 扫码录入
+                </button>
+              </div>
+              <div class="form-text">信标需提前粘贴至服务对象家中，MAC地址可在设备标签上查看</div>
+            </div>
+            <div class="form-group">
+              <label for="serviceStartDate" class="form-label">服务开始日期</label>
+              <input type="date" class="form-control" id="serviceStartDate" required>
+              <div class="form-text">绍兴地区默认公示次月1日，其他地区可自定义（需晚于公示日期）</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" id="confirmAssignmentBtn">确认分配</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 查看分配记录模态框 -->
+  <div class="modal fade" id="recordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="recordModalTitle">分配记录 - 陈一</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="assignment-table">
+              <thead>
+                <tr>
+                  <th>分配时间</th>
+                  <th>护理员</th>
+                  <th>信标MAC地址</th>
+                  <th>服务开始日期</th>
+                  <th>分配人</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody id="recordListBody">
+                <tr>
+                  <td>2024-08-20 14:30:25</td>
+                  <td>李护理</td>
+                  <td>AA:BB:CC:DD:EE:FF</td>
+                  <td>2024-09-01</td>
+                  <td>服务主管</td>
+                  <td><span class="status-badge status-assigned">当前有效</span></td>
+                </tr>
+                <tr>
+                  <td>2024-08-15 09:15:40</td>
+                  <td>王护理</td>
+                  <td>AA:BB:CC:DD:EE:EE</td>
+                  <td>2024-09-01</td>
+                  <td>服务主管</td>
+                  <td><span class="status-badge">已失效</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">关闭</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .name-suggestion-item {
+      padding: 8px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      margin-bottom: 5px;
+      cursor: pointer;
+      background: #fff;
+    }
+    .name-suggestion-item:hover {
+      background: #f0f7ff;
+      border-color: #1890FF;
+    }
+    .selected-object-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      background: #e6f7ff;
+      border: 1px solid #91d5ff;
+      border-radius: 4px;
+      margin-right: 8px;
+      margin-bottom: 5px;
+    }
+    .selected-object-badge .remove-btn {
+      margin-left: 8px;
+      cursor: pointer;
+      color: #ff4d4f;
+    }
+  </style>
+
+  <script>
+    $(function() {
+      // 初始化模态框
+      const assignmentModal = new bootstrap.Modal('#assignmentModal');
+      const recordModal = new bootstrap.Modal('#recordModal');
+      
+      // 选中的服务对象列表
+      let selectedObjects = [];
+      
+      // 模拟服务对象数据（包含重名情况）
+      let allServiceObjects = [
+        { id: 1, name: '陈一', address: '杭州市西湖区XX路123号', publishDate: '2024-08-15', region: '杭州市西湖区', currentCaregiver: null },
+        { id: 2, name: '吴二', address: '杭州市拱墅区XX路456号', publishDate: '2024-08-20', region: '杭州市拱墅区', currentCaregiver: '李护理' },
+        { id: 3, name: '郑三', address: '绍兴市越城区XX路789号', publishDate: '2024-08-10', region: '绍兴市越城区', currentCaregiver: null },
+        { id: 4, name: '钱五', address: '绍兴市柯桥区XX路321号', publishDate: '2024-07-25', region: '绍兴市柯桥区', currentCaregiver: '王护理' },
+        { id: 5, name: '冯四', address: '杭州市滨江区XX路654号', publishDate: '2024-09-05', region: '杭州市滨江区', currentCaregiver: null },
+        { id: 6, name: '陈一', address: '杭州市上城区XX路999号', publishDate: '2024-08-18', region: '杭州市上城区', currentCaregiver: null } // 重名示例
+      ];
+      
+      // 护理员选择变化
+      $('#selectedCaregiver').change(function() {
+        const caregiverId = $(this).val();
+        if (caregiverId) {
+          $('#addServiceObjectBtn, #batchAssignBtn').prop('disabled', false);
+        } else {
+          $('#addServiceObjectBtn, #batchAssignBtn').prop('disabled', true);
+        }
+      });
+      
+      // 输入姓名自动搜索
+      $('#serviceObjectNameInput').on('input', function() {
+        const name = $(this).val().trim();
+        const suggestions = $('#nameSuggestions');
+        
+        if (name.length < 1) {
+          suggestions.hide().empty();
+          return;
+        }
+        
+        // 搜索匹配的服务对象
+        const matches = allServiceObjects.filter(obj => obj.name.includes(name));
+        
+        if (matches.length === 0) {
+          suggestions.hide().empty();
+        } else if (matches.length === 1) {
+          // 唯一匹配，自动选中
+          suggestions.hide().empty();
+          addServiceObject(matches[0]);
+          $(this).val('');
+        } else {
+          // 多个匹配，显示选择列表
+          suggestions.empty().show();
+          matches.forEach(obj => {
+            const item = $(`
+              <div class="name-suggestion-item" data-id="${obj.id}">
+                <strong>${obj.name}</strong> - ${obj.address}
+              </div>
+            `);
+            item.click(function() {
+              const objId = $(this).data('id');
+              const obj = allServiceObjects.find(o => o.id === objId);
+              if (obj) {
+                addServiceObject(obj);
+                $('#serviceObjectNameInput').val('');
+                suggestions.hide().empty();
+              }
+            });
+            suggestions.append(item);
+          });
+        }
+      });
+      
+      // 添加服务对象到待分配列表
+      function addServiceObject(obj) {
+        // 检查是否已添加
+        if (selectedObjects.find(o => o.id === obj.id)) {
+          alert('该服务对象已在待分配列表中');
+          return;
+        }
+        
+        selectedObjects.push(obj);
+        updateSelectedObjectsList();
+      }
+      
+      // 更新待分配列表显示
+      function updateSelectedObjectsList() {
+        const container = $('#selectedObjectsContainer');
+        container.empty();
+        
+        if (selectedObjects.length === 0) {
+          $('#selectedObjectsList').hide();
+          return;
+        }
+        
+        $('#selectedObjectsList').show();
+        selectedObjects.forEach(obj => {
+          const badge = $(`
+            <span class="selected-object-badge">
+              ${obj.name} (${obj.address})
+              <span class="remove-btn" data-id="${obj.id}">×</span>
+            </span>
+          `);
+          badge.find('.remove-btn').click(function() {
+            const id = $(this).data('id');
+            selectedObjects = selectedObjects.filter(o => o.id !== id);
+            updateSelectedObjectsList();
+          });
+          container.append(badge);
+        });
+      }
+      
+      // 添加按钮点击
+      $('#addServiceObjectBtn').click(function() {
+        const name = $('#serviceObjectNameInput').val().trim();
+        if (!name) {
+          alert('请输入服务对象姓名');
+          return;
+        }
+        
+        const matches = allServiceObjects.filter(obj => obj.name === name);
+        if (matches.length === 0) {
+          alert('未找到匹配的服务对象');
+        } else if (matches.length === 1) {
+          addServiceObject(matches[0]);
+          $('#serviceObjectNameInput').val('');
+        } else {
+          // 重名，显示选择列表
+          $('#nameSuggestions').empty().show();
+          matches.forEach(obj => {
+            const item = $(`
+              <div class="name-suggestion-item" data-id="${obj.id}">
+                <strong>${obj.name}</strong> - ${obj.address}
+              </div>
+            `);
+            item.click(function() {
+              const objId = $(this).data('id');
+              const obj = allServiceObjects.find(o => o.id === objId);
+              if (obj) {
+                addServiceObject(obj);
+                $('#serviceObjectNameInput').val('');
+                $('#nameSuggestions').hide().empty();
+              }
+            });
+            $('#nameSuggestions').append(item);
+          });
+        }
+      });
+      
+      // 批量分配按钮
+      $('#batchAssignBtn').click(function() {
+        const caregiverId = $('#selectedCaregiver').val();
+        if (!caregiverId) {
+          alert('请先选择护理员');
+          return;
+        }
+        
+        if (selectedObjects.length === 0) {
+          alert('请先添加要分配的服务对象');
+          return;
+        }
+        
+        const caregiverName = $('#selectedCaregiver option:selected').text().split('（')[0];
+        const confirmMsg = `确定要将 ${selectedObjects.length} 个服务对象分配给 ${caregiverName} 吗？`;
+        
+        if (confirm(confirmMsg)) {
+          // 执行分配（模拟）
+          console.log('分配护理员:', caregiverName);
+          console.log('分配的服务对象:', selectedObjects);
+          
+          // 清空列表
+          selectedObjects = [];
+          updateSelectedObjectsList();
+          $('#serviceObjectNameInput').val('');
+          $('#selectedCaregiver').val('');
+          $('#addServiceObjectBtn, #batchAssignBtn').prop('disabled', true);
+          
+          alert('分配成功！');
+        }
+      });
+      
+      // 快速分配按钮（表格中的按钮）
+      $(document).on('click', '.quick-assign-btn', function() {
+        const objectId = $(this).data('id');
+        const objectName = $(this).data('name');
+        const objectAddress = $(this).data('address');
+        const currentCaregiver = $(this).data('current-caregiver');
+        const caregiverId = $('#selectedCaregiver').val();
+        
+        if (!caregiverId) {
+          // 未选择护理员，这是取消分配操作
+          if (!confirm(`确定要取消 ${objectName} 的护理关系吗？\n当前护理员：${currentCaregiver || '未分配'}\n\n此操作将解除该服务对象与护理员的关联关系。`)) {
+            return;
+          }
+          
+          // 执行取消分配（模拟）
+          console.log('取消分配:', objectName);
+          alert('已取消护理关系');
+          return;
+        }
+        
+        // 已选择护理员，直接分配
+        const caregiverName = $('#selectedCaregiver option:selected').text().split('（')[0];
+        const obj = allServiceObjects.find(o => o.id === objectId);
+        
+        if (obj) {
+          if (confirm(`确定要将 ${objectName} 分配给 ${caregiverName} 吗？\n${currentCaregiver ? '原护理员：' + currentCaregiver : ''}`)) {
+            // 执行分配（模拟）
+            console.log('分配:', objectName, '->', caregiverName);
+            alert('分配成功！');
+          }
+        }
+      });
+      
+      // 筛选按钮点击事件
+      $('#filterBtn').click(function() {
+        const name = $('#filterName').val().trim();
+        const publishStart = $('#filterPublishStart').val();
+        const publishEnd = $('#filterPublishEnd').val();
+        const disabilityLevel = $('#filterDisabilityLevel').val();
+        const region = $('#filterRegion').val();
+        
+        // 模拟筛选逻辑（实际项目中应请求后端接口）
+        let filteredCount = 0;
+        $('#objectListBody tr').each(function() {
+          const rowName = $(this).find('td:eq(0)').text();
+          const rowPublishDate = $(this).find('td:eq(3)').text();
+          const rowDisabilityLevel = $(this).find('td:eq(2)').text();
+          const rowRegion = $(this).find('td:eq(4)').text();
+          
+          // 姓名模糊匹配
+          const nameMatch = name === '' || rowName.includes(name);
+          // 公示日期范围匹配
+          const dateMatch = rowPublishDate >= publishStart && rowPublishDate <= publishEnd;
+          // 失能等级匹配
+          const levelMatch = disabilityLevel === 'all' || rowDisabilityLevel === disabilityLevel;
+          // 区域匹配
+          const regionMatch = region === 'all' || rowRegion === region;
+          
+          const isMatch = nameMatch && dateMatch && levelMatch && regionMatch;
+          $(this).toggle(isMatch);
+          if (isMatch) filteredCount++;
+        });
+        
+        // 更新记录数显示
+        $('#totalCount').text(`共 <strong>${filteredCount}</strong> 条记录`);
+        // 使用更友好的提示方式
+        console.log(`已应用筛选条件！\n姓名：${name || '不限'}\n公示日期：${publishStart} 至 ${publishEnd}\n失能等级：${disabilityLevel === 'all' ? '不限' : disabilityLevel}\n所属区域：${region === 'all' ? '不限' : region}`);
+      });
+      
+      // 重置筛选按钮点击事件
+      $('#resetFilterBtn').click(function() {
+        $('#filterName').val('');
+        $('#filterPublishStart').val('2024-07-01');
+        $('#filterPublishEnd').val('2024-09-30');
+        $('#filterDisabilityLevel').val('all');
+        $('#filterRegion').val('all');
+        
+        // 显示所有记录
+        $('#objectListBody tr').show();
+        $('#totalCount').text(`共 <strong>8</strong> 条记录`);
+      });
+      
+      // 分配护理员按钮点击事件
+      $('.assign-btn').click(function() {
+        const objectId = $(this).data('id');
+        const objectName = $(this).data('name');
+        const publishDate = $(this).data('publish-date');
+        const region = $(this).data('region');
+        const currentCaregiver = $(this).data('current-caregiver');
+        
+        // 填充模态框数据
+        $('#objectId').val(objectId);
+        $('#modalTitle').text(`分配护理员 - ${objectName}`);
+        $('#publishDate').val(publishDate);
+        
+        // 重置表单
+        $('#assignmentForm')[0].reset();
+        
+        // 计算默认服务开始日期（公示次月1日）
+        const publishDateObj = new Date(publishDate);
+        const nextMonth = publishDateObj.getMonth() + 1;
+        const nextYear = publishDateObj.getFullYear() + (nextMonth > 11 ? 1 : 0);
+        const defaultStartDate = `${nextYear}-${String(nextMonth % 12 || 12).padStart(2, '0')}-01`;
+        $('#serviceStartDate').val(defaultStartDate);
+        
+        // 绍兴地区特殊处理（强制默认公示次月1日）
+        if (region.includes('绍兴')) {
+          $('#serviceStartDate').prop('readonly', true);
+          $('#serviceStartDate').next('.form-text').text('绍兴地区默认公示次月1日，不可修改');
+        } else {
+          $('#serviceStartDate').prop('readonly', false);
+          $('#serviceStartDate').next('.form-text').text('需晚于公示日期');
+        }
+        
+        // 如果已有护理员，默认选中
+        if (currentCaregiver) {
+          $('#caregiverId option').each(function() {
+            if ($(this).text().includes(currentCaregiver)) {
+              $(this).prop('selected', true);
+            }
+          });
+        }
+        
+        // 显示模态框
+        assignmentModal.show();
+      });
+      
+      // 扫码录入按钮点击事件（模拟）
+      $('#scanQrBtn').click(function() {
+        // 实际项目中应调用扫码枪API或设备摄像头扫描二维码
+        // 这里模拟生成一个随机MAC地址
+        const macParts = [];
+        for (let i = 0; i < 6; i++) {
+          const part = Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
+          macParts.push(part);
+        }
+        const randomMac = macParts.join(':').toUpperCase();
+        $('#beaconMac').val(randomMac);
+        
+        // 使用更友好的提示方式
+        console.log(`已模拟扫码录入，生成随机MAC地址：${randomMac}\n实际项目中请替换为真实扫码逻辑`);
+      });
+      
+      // 确认分配按钮点击事件
+      $('#confirmAssignmentBtn').click(function() {
+        const objectId = $('#objectId').val();
+        const objectName = $('#modalTitle').text().replace('分配护理员 - ', '');
+        const caregiverId = $('#caregiverId').val();
+        const caregiverName = $('#caregiverId option:selected').text().split('（')[0];
+        const beaconMac = $('#beaconMac').val();
+        const serviceStartDate = $('#serviceStartDate').val();
+        const publishDate = $('#publishDate').val();
+        
+        // 表单验证
+        if (!caregiverId) {
+          alert('请选择护理员');
+          return;
+        }
+        if (!beaconMac) {
+          alert('请输入信标MAC地址');
+          return;
+        }
+        if (!serviceStartDate) {
+          alert('请选择服务开始日期');
+          return;
+        }
+        if (serviceStartDate <= publishDate) {
+          alert('服务开始日期必须晚于公示日期');
+          return;
+        }
+        
+        // 模拟分配逻辑（实际项目中应请求后端接口）
+        // 使用更友好的提示方式
+        console.log(`成功为【${objectName}】分配护理员！\n护理员：${caregiverName}\n信标MAC地址：${beaconMac}\n服务开始日期：${serviceStartDate}`);
+        
+        // 关闭模态框
+        assignmentModal.hide();
+        
+        // 刷新列表（模拟）
+        const $targetRow = $(`.assign-btn[data-id="${objectId}"]`).closest('tr');
+        $targetRow.find('td:eq(5)').html(`<span class="status-badge status-assigned">${caregiverName}</span>`);
+        $targetRow.find('.assign-btn').text('调整分配').data('current-caregiver', caregiverName);
+      });
+      
+      // 查看分配记录按钮点击事件
+      $('.view-record-btn').click(function() {
+        const objectId = $(this).data('id');
+        const objectName = $(`.assign-btn[data-id="${objectId}"]`).data('name');
+        
+        // 填充模态框标题
+        $('#recordModalTitle').text(`分配记录 - ${objectName}`);
+        
+        // 模拟加载记录（实际项目中应请求后端接口）
+        // 这里使用固定数据，实际应根据objectId获取
+        $('#recordListBody').html(`
+          <tr>
+            <td>2024-08-20 14:30:25</td>
+            <td>李护理</td>
+            <td>AA:BB:CC:DD:EE:FF</td>
+            <td>2024-09-01</td>
+            <td>服务主管</td>
+            <td><span class="status-badge status-assigned">当前有效</span></td>
+          </tr>
+          <tr>
+            <td>2024-08-15 09:15:40</td>
+            <td>王护理</td>
+            <td>AA:BB:CC:DD:EE:EE</td>
+            <td>2024-09-01</td>
+            <td>服务主管</td>
+            <td><span class="status-badge">已失效</span></td>
+          </tr>
+        `);
+        
+        // 显示模态框
+        recordModal.show();
+      });
+    });
+  </script>
+</body>
+</html>

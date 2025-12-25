@@ -1,0 +1,2539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服务计划管理 - 服务管理</title>
+  <!-- 引入外部资源 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <style>
+    /* 继承全局样式 */
+    body { font-family: "微软雅黑", "思源黑体", sans-serif; background-color: #f5f7fa; color: #333; }
+    .btn-primary { background-color: #1890FF; border-color: #1890FF; }
+    .btn-primary:hover { background-color: #096DD9; border-color: #096DD9; }
+    .btn-outline-secondary { border-color: #ddd; color: #666; }
+    .btn-outline-secondary:hover { background-color: #f5f5f5; border-color: #ccc; }
+    .btn-danger { background-color: #FF4D4F; border-color: #FF4D4F; }
+    .btn-danger:hover { background-color: #d9363e; border-color: #d9363e; }
+    .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .card-header { background: #fff; border-bottom: 1px solid #f0f0f0; border-radius: 12px 12px 0 0; padding: 15px 20px; font-weight: 600; font-size: 15px; }
+    .card-body { padding: 20px; }
+    /* 布局样式 */
+    .app-container { display: flex; min-height: 100vh; }
+    /* 侧边导航 */
+    .sidebar { width: 220px; background: #fff; box-shadow: 1px 0 2px rgba(0,0,0,0.05); padding: 20px 0; flex-shrink: 0; }
+    .sidebar-logo { text-align: center; padding: 0 20px 20px; border-bottom: 1px solid #f0f0f0; margin-bottom: 20px; }
+    .sidebar-logo img { height: 40px; margin-bottom: 8px; }
+    .sidebar-logo h3 { font-size: 16px; color: #1890FF; font-weight: 600; margin: 0; }
+    .nav-menu { list-style: none; padding: 0; margin: 0; }
+    .nav-item { margin-bottom: 4px; }
+    .nav-link { display: flex; align-items: center; padding: 12px 20px; color: #666; text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
+    .nav-link:hover, .nav-link.active { color: #1890FF; background-color: #f0f7ff; border-left: 3px solid #1890FF; }
+    .nav-link i { font-size: 18px; margin-right: 12px; width: 20px; text-align: center; }
+    .nav-group-title { padding: 15px 20px 5px; font-size: 12px; color: #999; font-weight: 500; }
+    /* 主内容区 */
+    .main-content { flex: 1; padding: 20px; overflow-y: auto; }
+    /* 顶部导航 */
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .page-title { font-size: 20px; font-weight: 600; color: #333; margin: 0; }
+    .user-info { display: flex; align-items: center; }
+    .notification { position: relative; margin-right: 20px; cursor: pointer; }
+    .notification i { font-size: 20px; color: #666; }
+    .notification-badge { position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; background: #FF4D4F; color: #fff; border-radius: 50%; font-size: 12px; text-align: center; line-height: 18px; }
+    .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #1890FF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; margin-right: 10px; }
+    .user-name { font-size: 14px; font-weight: 500; }
+
+    /* 服务计划管理专属样式 */
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; }
+    .filter-group { flex: 1; min-width: 150px; }
+    .filter-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    .filter-group input, .filter-group select { width: 100%; }
+    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .action-left { display: flex; gap: 10px; }
+    .action-right { display: flex; gap: 10px; }
+    .management-table { width: 100%; border-collapse: collapse; }
+    .management-table th, .management-table td { border: 1px solid #f0f0f0; padding: 12px 15px; text-align: left; font-size: 13px; }
+    .management-table th { background-color: #f8f9fa; font-weight: 500; }
+    .management-table tbody tr:hover { background-color: #f9f9f9; }
+    
+    /* 计划编辑页样式 */
+    .plan-edit-container { display: flex; gap: 20px; }
+    .health-status-section { flex: 1; background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .service-items-section { 
+      flex: 2; 
+      background: #fff; 
+      border-radius: 8px; 
+      padding: 15px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      min-height: 0; /* 重要：允许flex子元素收缩 */
+    }
+    
+    .status-card { margin-bottom: 15px; padding: 12px; border: 1px solid #f0f0f0; border-radius: 6px; }
+    .status-card h5 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #1890FF; }
+    .status-item { display: flex; margin-bottom: 6px; font-size: 13px; }
+    .status-label { width: 80px; color: #666; }
+    .status-value { flex: 1; color: #333; }
+    
+    .service-category { margin-bottom: 20px; }
+    .category-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; padding-left: 10px; border-left: 3px solid #1890FF; }
+    .service-item { display: flex; align-items: center; margin-bottom: 10px; padding: 8px; border: 1px solid #f0f0f0; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    .service-item:hover { background-color: #f5fafe; border-color: #e1f0fe; }
+    .service-item input[type="checkbox"] { margin-right: 10px; width: 16px; height: 16px; }
+    .service-info { flex: 1; }
+    .service-name { font-weight: 500; margin-bottom: 3px; }
+    .service-rules { font-size: 12px; color: #666; }
+    .service-actions { display: flex; align-items: center; gap: 10px; }
+    .service-actions input[type="number"] { width: 60px; text-align: center; }
+    
+    /* 服务项目列表滚动容器 */
+    #serviceItemsContainer { 
+      flex: 1;
+      max-height: 500px; 
+      overflow-y: auto; 
+      overflow-x: hidden;
+      padding-right: 10px;
+      margin-top: 10px;
+    }
+    #serviceItemsContainer::-webkit-scrollbar {
+      width: 8px;
+    }
+    #serviceItemsContainer::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    #serviceItemsContainer::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+    #serviceItemsContainer::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    
+    .duration-stats { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+    .stats-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .stats-label { font-weight: 500; }
+    .stats-value { color: #1890FF; font-weight: 600; }
+    .stats-progress { height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; margin-top: 10px; }
+    .progress-bar { height: 100%; background: #1890FF; border-radius: 4px; transition: width 0.3s; }
+    
+    .frequency-setting { margin-bottom: 20px; }
+    
+    /* 预览页样式 */
+    .preview-modal .modal-dialog { max-width: 800px; }
+    .preview-content { background: #fff; padding: 30px; font-family: "宋体", serif; }
+    .institution-header { text-align: center; margin-bottom: 20px; }
+    .institution-name { font-size: 22px; font-weight: bold; margin-bottom: 5px; }
+    .plan-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 20px; }
+    .info-section { margin-bottom: 20px; }
+    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .info-table td { border: 1px solid #000; padding: 6px 10px; font-size: 14px; }
+    .info-table .label-cell { width: 100px; background: #f8f8f8; font-weight: bold; }
+    
+    .health-summary { margin-bottom: 20px; }
+    .summary-title { font-weight: bold; margin-bottom: 8px; }
+    .summary-content { font-size: 14px; line-height: 1.6; }
+    
+    .service-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .service-table th, .service-table td { border: 1px solid #000; padding: 8px 10px; font-size: 14px; text-align: center; }
+    .service-table th { background: #f8f8f8; font-weight: bold; }
+    
+    .signature-section { display: flex; justify-content: space-between; margin-top: 40px; font-size: 14px; }
+    .signature-item { text-align: center; width: 30%; }
+    .signature-line { border-bottom: 1px solid #000; margin: 10px 0; height: 30px; }
+    
+    .stamp-area { position: relative; height: 80px; margin-top: 30px; }
+    .stamp-placeholder { position: absolute; right: 20px; top: 0; width: 120px; height: 80px; border: 1px dashed #666; text-align: center; line-height: 80px; font-size: 12px; color: #666; }
+    
+    /* 打印功能样式 */
+    .plan-status-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+    .status-created { background-color: #e6f7ef; color: #52C41A; }
+    .status-not-created { background-color: #fff1f0; color: #FF4D4F; }
+    .print-settings { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    .print-settings-row { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+    .print-settings-group { display: flex; align-items: center; gap: 10px; }
+    .print-settings-group label { margin: 0; font-weight: 500; white-space: nowrap; }
+    .print-preview-modal .modal-dialog { max-width: 900px; }
+    .print-preview-content { background: #fff; padding: 30px; font-family: "宋体", serif; }
+    @media print {
+      .no-print { display: none !important; }
+      .print-preview-content { padding: 20px; }
+      body { background: #fff; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 侧边导航 -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://via.placeholder.com/80x40?text=居家长护" alt="系统Logo">
+        <h3>服务主管工作平台</h3>
+      </div>
+      
+      <!-- 导航分组：统计分析 -->
+      <div class="nav-group-title">看板管理</div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="数据驾驶舱.html" class="nav-link">
+            <i class="fa fa-dashboard"></i>
+            <span>数据驾驶舱</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="index.html" class="nav-link">
+            <i class="fa fa-dashboard"></i>
+            <span>服务对象看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="总体统计.html" class="nav-link">
+            <i class="fa fa-bar-chart"></i>
+            <span>总体统计看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="流程管理.html" class="nav-link">
+            <i class="fa fa-sitemap"></i>
+            <span>流程管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="线上回访.html" class="nav-link">
+            <i class="fa fa-phone"></i>
+            <span>线上线下回访执行</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="服务对象分配.html" class="nav-link">
+            <i class="fa fa-users"></i>
+            <span>服务对象分配</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="新增服务对象管理.html" class="nav-link">
+            <i class="fa fa-user-plus"></i>
+            <span>新增服务对象配置</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="首月服务计划管理.html" class="nav-link active">
+            <i class="fa fa-calendar"></i>
+            <span>服务计划管理或打印</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="平台工单差异查询.html" class="nav-link">
+            <i class="fa fa-search"></i>
+            <span>医保工单差异查询</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="工单管理.html" class="nav-link">
+            <i class="fa fa-tasks"></i>
+            <span>工单管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="重点服务对象管理.html" class="nav-link">
+            <i class="fa fa-star"></i>
+            <span>重点服务对象管理</span>
+          </a>
+        </li>
+      </ul>
+      
+      <!-- 导航分组：系统设置 -->
+      <div class="nav-group-title">系统设置</div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#" class="nav-link" id="caregiverSettingsLink">
+            <i class="fa fa-cog"></i>
+            <span>护理员设置</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <!-- 顶部导航：标题 + 用户信息 -->
+      <div class="top-nav">
+        <h1 class="page-title">服务计划管理</h1>
+        <div class="user-info">
+          <div class="notification">
+            <i class="fa fa-bell-o"></i>
+            <span class="notification-badge">2</span>
+          </div>
+          <div class="user-avatar">主</div>
+          <div class="user-name">服务主管</div>
+        </div>
+      </div>
+
+      <!-- 功能标签页 -->
+      <ul class="nav nav-tabs" id="planTabs" role="tablist" style="margin-bottom: 20px;">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="create-plan-tab" data-bs-toggle="tab" data-bs-target="#create-plan" type="button" role="tab" aria-controls="create-plan" aria-selected="true">
+            <i class="fa fa-edit"></i> 制定计划
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="print-plan-tab" data-bs-toggle="tab" data-bs-target="#print-plan" type="button" role="tab" aria-controls="print-plan" aria-selected="false">
+            <i class="fa fa-print"></i> 服务计划打印
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="print-agreement-tab" data-bs-toggle="tab" data-bs-target="#print-agreement" type="button" role="tab" aria-controls="print-agreement" aria-selected="false">
+            <i class="fa fa-file-text"></i> 服务协议打印
+          </button>
+        </li>
+      </ul>
+
+      <!-- 功能内容区 -->
+      <div class="tab-content" id="planTabContent">
+        <!-- 制定计划标签页 -->
+        <div class="tab-pane fade show active" id="create-plan" role="tabpanel" aria-labelledby="create-plan-tab">
+              <!-- 筛选区域 -->
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label for="filterCaregiver">护理员</label>
+              <select class="form-select" id="filterCaregiver">
+                <option value="all">全部护理员</option>
+                <option value="李护理">李护理</option>
+                <option value="王护理">王护理</option>
+                <option value="张护理">张护理</option>
+                <option value="赵护理">赵护理</option>
+                <option value="孙护理">孙护理</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label for="filterStartDate">服务开始日期</label>
+              <input type="date" class="form-control" id="filterStartDate" value="2024-09-01">
+            </div>
+            <div class="filter-group" style="align-self: flex-end;">
+              <button class="btn btn-primary" id="queryBtn">
+                <i class="fa fa-search"></i> 查询
+              </button>
+              <button class="btn btn-outline-secondary" id="resetFilterBtn">
+                <i class="fa fa-refresh"></i> 重置
+              </button>
+            </div>
+          </div>
+
+          <!-- 待制定计划对象列表 -->
+          <div class="card">
+            <div class="card-header">
+              服务对象列表
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="management-table">
+                  <thead>
+                    <tr>
+                      <th>姓名</th>
+                      <th>身份证号</th>
+                      <th>失能等级</th>
+                      <th>负责护理员</th>
+                      <th>服务开始日期</th>
+                      <th>当前计划状态</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="objectListBody">
+                    <tr>
+                      <td>陈一</td>
+                      <td>330106********1234</td>
+                      <td>一级</td>
+                      <td>李护理</td>
+                      <td>2024-09-01</td>
+                      <td>
+                        <span class="plan-status-badge status-not-created">未制定计划</span>
+                      </td>
+                      <td>
+                        <button class="btn btn-primary btn-sm create-plan-btn" 
+                                data-id="1" 
+                                data-name="陈一" 
+                                data-id-card="330106********1234"
+                                data-disability-level="一级"
+                                data-caregiver="李护理"
+                                data-start-date="2024-09-01"
+                                data-gender="男">
+                          制定计划
+                        </button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>吴二</td>
+                      <td>330105********5678</td>
+                      <td>二级</td>
+                      <td>李护理</td>
+                      <td>2024-09-01</td>
+                      <td>
+                        <span class="plan-status-badge status-created">已有计划</span>
+                        <div style="font-size: 12px; color: #666; margin-top: 4px;">制定时间：2024-09-01</div>
+                      </td>
+                      <td>
+                        <div style="display: flex; gap: 5px;">
+                          <button class="btn btn-outline-primary btn-sm view-plan-btn" 
+                                  data-id="2" 
+                                  data-name="吴二">
+                            查看计划
+                          </button>
+                        <button class="btn btn-primary btn-sm create-plan-btn" 
+                                data-id="2" 
+                                data-name="吴二" 
+                                data-id-card="330105********5678"
+                                data-disability-level="二级"
+                                data-caregiver="李护理"
+                                data-start-date="2024-09-01"
+                                data-gender="女">
+                            制定新计划
+                        </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>郑三</td>
+                      <td>330602********9012</td>
+                      <td>三级</td>
+                      <td>张护理</td>
+                      <td>2024-09-15</td>
+                      <td>
+                        <span class="plan-status-badge status-created">已有计划</span>
+                        <div style="font-size: 12px; color: #666; margin-top: 4px;">制定时间：2024-08-15</div>
+                      </td>
+                      <td>
+                        <div style="display: flex; gap: 5px;">
+                          <button class="btn btn-outline-primary btn-sm view-plan-btn" 
+                                  data-id="3" 
+                                  data-name="郑三">
+                            查看计划
+                          </button>
+                        <button class="btn btn-primary btn-sm create-plan-btn" 
+                                data-id="3" 
+                                data-name="郑三" 
+                                data-id-card="330602********9012"
+                                data-disability-level="三级"
+                                data-caregiver="张护理"
+                                data-start-date="2024-09-15"
+                                data-gender="男">
+                            制定新计划
+                        </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 服务计划打印标签页 -->
+        <div class="tab-pane fade" id="print-plan" role="tabpanel" aria-labelledby="print-plan-tab">
+          <!-- 打印维度选择标签页 -->
+          <ul class="nav nav-tabs" id="printDimensionTabs" role="tablist" style="margin-bottom: 20px;">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="by-caregiver-tab" data-bs-toggle="tab" data-bs-target="#by-caregiver" type="button" role="tab" aria-controls="by-caregiver" aria-selected="true">
+                <i class="fa fa-user-md"></i> 按护理员打印
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="by-client-tab" data-bs-toggle="tab" data-bs-target="#by-client" type="button" role="tab" aria-controls="by-client" aria-selected="false">
+                <i class="fa fa-user"></i> 按服务对象打印
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="printDimensionContent">
+            <!-- 按护理员打印 -->
+            <div class="tab-pane fade show active" id="by-caregiver" role="tabpanel" aria-labelledby="by-caregiver-tab">
+              <div class="card">
+                <div class="card-header">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>按护理员打印服务计划</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <!-- 筛选条件 -->
+                  <div class="filter-bar">
+                    <div class="filter-group">
+                      <label for="printCaregiver">选择护理员 <span class="text-danger">*</span></label>
+                      <select class="form-select" id="printCaregiver" required>
+                        <option value="">请选择护理员</option>
+                        <option value="李护理">李护理</option>
+                        <option value="王护理">王护理</option>
+                        <option value="张护理">张护理</option>
+                        <option value="赵护理">赵护理</option>
+                        <option value="孙护理">孙护理</option>
+                      </select>
+                    </div>
+                    <div class="filter-group">
+                      <label for="printServiceMonth">服务月份 <span class="text-danger">*</span></label>
+                      <input type="month" class="form-control" id="printServiceMonth" value="2024-09" required>
+                    </div>
+                    <div class="filter-group" style="align-self: flex-end;">
+                      <button class="btn btn-primary" id="loadCaregiverPlansBtn">
+                        <i class="fa fa-search"></i> 查询计划
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 服务计划列表 -->
+                  <div class="table-responsive mt-3">
+                    <table class="management-table" id="caregiverPlanTable">
+                      <thead>
+                        <tr>
+                          <th style="width: 50px;"><input type="checkbox" id="selectAllCaregiverPlans"></th>
+                          <th>服务对象</th>
+                          <th>身份证号</th>
+                          <th>计划状态</th>
+                          <th>月度总时长</th>
+                          <th>每周频次</th>
+                        </tr>
+                      </thead>
+                      <tbody id="caregiverPlanTableBody">
+                        <tr>
+                          <td colspan="6" class="text-center text-muted">请选择护理员和服务月份后查询</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- 批量打印按钮 -->
+                  <div class="action-bar mt-3">
+                    <div class="action-left">
+                      <span class="text-muted" id="selectedCaregiverCount">已选择 0 个服务对象</span>
+                    </div>
+                    <div class="action-right">
+                      <button class="btn btn-primary" id="batchPrintCaregiverBtn" disabled>
+                        <i class="fa fa-print"></i> 批量打印
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 按服务对象打印 -->
+            <div class="tab-pane fade" id="by-client" role="tabpanel" aria-labelledby="by-client-tab">
+              <div class="card">
+                <div class="card-header">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>按服务对象打印服务计划</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <!-- 搜索和筛选条件 -->
+                  <div class="filter-bar">
+                    <div class="filter-group">
+                      <label for="searchClient">搜索服务对象</label>
+                      <input type="text" class="form-control" id="searchClient" placeholder="输入姓名或身份证号">
+                    </div>
+                    <div class="filter-group">
+                      <label for="printClientRegion">行政区域</label>
+                      <select class="form-select" id="printClientRegion">
+                        <option value="all">全部区域</option>
+                        <option value="region1">杭州市西湖区</option>
+                        <option value="region2">杭州市拱墅区</option>
+                        <option value="region3">杭州市滨江区</option>
+                      </select>
+                    </div>
+                    <div class="filter-group">
+                      <label for="printClientStatus">服务状态</label>
+                      <select class="form-select" id="printClientStatus">
+                        <option value="all">全部状态</option>
+                        <option value="normal">正常</option>
+                        <option value="suspended">暂停</option>
+                      </select>
+                    </div>
+                    <div class="filter-group" style="align-self: flex-end;">
+                      <button class="btn btn-primary" id="loadClientPlansBtn">
+                        <i class="fa fa-search"></i> 查询
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 服务计划列表 -->
+                  <div class="table-responsive mt-3">
+                    <table class="management-table" id="clientPlanTable">
+                      <thead>
+                        <tr>
+                          <th style="width: 50px;"><input type="checkbox" id="selectAllClientPlans"></th>
+                          <th>服务对象</th>
+                          <th>身份证号</th>
+                          <th>服务月份</th>
+                          <th>负责护理员</th>
+                          <th>计划状态</th>
+                          <th>月度总时长</th>
+                        </tr>
+                      </thead>
+                      <tbody id="clientPlanTableBody">
+                        <tr>
+                          <td colspan="7" class="text-center text-muted">请设置筛选条件后查询</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- 批量打印按钮 -->
+                  <div class="action-bar mt-3">
+                    <div class="action-left">
+                      <span class="text-muted" id="selectedClientCount">已选择 0 个计划</span>
+                    </div>
+                    <div class="action-right">
+                      <button class="btn btn-primary" id="batchPrintClientBtn" disabled>
+                        <i class="fa fa-print"></i> 批量打印（计划+协议）
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 服务协议打印标签页 -->
+        <div class="tab-pane fade" id="print-agreement" role="tabpanel" aria-labelledby="print-agreement-tab">
+          <div class="card">
+            <div class="card-header">
+              <div class="d-flex justify-content-between align-items-center">
+                <span>服务协议打印</span>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- 筛选条件 -->
+              <div class="filter-bar">
+                <div class="filter-group">
+                  <label for="agreementCaregiver">选择护理员</label>
+                  <select class="form-select" id="agreementCaregiver">
+                    <option value="">全部护理员</option>
+                    <option value="李护理">李护理</option>
+                    <option value="王护理">王护理</option>
+                    <option value="张护理">张护理</option>
+                    <option value="赵护理">赵护理</option>
+                    <option value="孙护理">孙护理</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <label for="agreementStartDate">服务开始日期</label>
+                  <input type="date" class="form-control" id="agreementStartDate" value="2024-09-01">
+                </div>
+                <div class="filter-group" style="align-self: flex-end;">
+                  <button class="btn btn-primary" id="queryAgreementBtn">
+                    <i class="fa fa-search"></i> 查询
+                  </button>
+                  <button class="btn btn-outline-secondary" id="resetAgreementFilterBtn">
+                    <i class="fa fa-refresh"></i> 重置
+                  </button>
+                </div>
+              </div>
+
+              <!-- 服务协议列表 -->
+              <div class="table-responsive mt-3">
+                <table class="management-table" id="agreementTable">
+                  <thead>
+                    <tr>
+                      <th style="width: 50px;"><input type="checkbox" id="selectAllAgreements"></th>
+                      <th>服务对象</th>
+                      <th>身份证号</th>
+                      <th>失能等级</th>
+                      <th>负责护理员</th>
+                      <th>服务开始日期</th>
+                      <th>协议状态</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="agreementTableBody">
+                    <tr>
+                      <td><input type="checkbox" class="agreement-checkbox" data-id="1"></td>
+                      <td>陈一</td>
+                      <td>330106********1234</td>
+                      <td>一级</td>
+                      <td>李护理</td>
+                      <td>2024-09-01</td>
+                      <td><span class="plan-status-badge status-created">已签署</span></td>
+                      <td>
+                        <button class="btn btn-primary btn-sm print-agreement-btn" data-id="1" data-name="陈一">打印协议</button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><input type="checkbox" class="agreement-checkbox" data-id="2"></td>
+                      <td>吴二</td>
+                      <td>330105********5678</td>
+                      <td>二级</td>
+                      <td>李护理</td>
+                      <td>2024-09-01</td>
+                      <td><span class="plan-status-badge status-created">已签署</span></td>
+                      <td>
+                        <button class="btn btn-primary btn-sm print-agreement-btn" data-id="2" data-name="吴二">打印协议</button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><input type="checkbox" class="agreement-checkbox" data-id="3"></td>
+                      <td>郑三</td>
+                      <td>330602********9012</td>
+                      <td>三级</td>
+                      <td>张护理</td>
+                      <td>2024-09-15</td>
+                      <td><span class="plan-status-badge status-created">已签署</span></td>
+                      <td>
+                        <button class="btn btn-primary btn-sm print-agreement-btn" data-id="3" data-name="郑三">打印协议</button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- 批量打印按钮 -->
+              <div class="action-bar mt-3">
+                <div class="action-left">
+                  <span class="text-muted" id="selectedAgreementCount">已选择 0 个协议</span>
+                </div>
+                <div class="action-right">
+                  <button class="btn btn-primary" id="batchPrintAgreementBtn" disabled>
+                    <i class="fa fa-print"></i> 批量打印协议
+                  </button>
+                  <button class="btn btn-success" id="batchPrintBothBtn" disabled>
+                    <i class="fa fa-print"></i> 同时打印协议和计划
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 计划编辑页面 (默认隐藏) -->
+      <div id="planEditPage" class="d-none">
+        <div class="top-nav mb-4">
+          <h1 class="page-title" id="editPageTitle">制定服务计划 - 陈一</h1>
+          <button class="btn btn-outline-secondary" id="backToListBtn">
+            <i class="fa fa-arrow-left"></i> 返回列表
+          </button>
+        </div>
+        
+        <div class="plan-edit-container">
+          <!-- 左侧：身体状况区 -->
+          <div class="health-status-section">
+            <h4 class="mb-3">身体状况评估（只读）</h4>
+            
+            <div class="health-description" style="line-height: 1.8; font-size: 14px; color: #333;">
+              <p style="margin-bottom: 15px; text-indent: 2em;">
+                <strong>认知功能方面：</strong>服务对象意识状态清醒，存在轻度认知障碍，但定向力基本正常，能够进行简单交流，表达清晰。
+              </p>
+              
+              <p style="margin-bottom: 15px; text-indent: 2em;">
+                <strong>行动能力方面：</strong>床上活动需部分协助翻身、坐起；转移能力受限，需他人协助从床到轮椅；行走能力较差，室内需扶拐行走，室外需使用轮椅。
+              </p>
+              
+              <p style="margin-bottom: 15px; text-indent: 2em;">
+                <strong>肢体状况方面：</strong>左侧上肢活动受限，右手抓握能力正常；双下肢无力，站立不稳；左侧肩关节活动受限。
+              </p>
+              
+              <p style="margin-bottom: 15px; text-indent: 2em;">
+                <strong>其他状况方面：</strong>皮肤状况方面，骶尾部有1期压疮，需加强护理；排便功能方面，存在大便失禁情况，需使用纸尿裤；进食能力方面，需协助进食，但可自行吞咽。
+              </p>
+            </div>
+          </div>
+          
+          <!-- 右侧：服务项目勾选区 -->
+          <div class="service-items-section">
+            <h4 class="mb-3">服务项目选择</h4>
+            
+            <!-- 时长统计区 -->
+            <div class="duration-stats">
+              <div class="stats-row">
+                <div class="stats-label">月度总时长上限：</div>
+                <div class="stats-value" id="totalDurationLimit">1200 分钟 (20小时)</div>
+              </div>
+              <div class="stats-row">
+                <div class="stats-label">已选时长：</div>
+                <div class="stats-value" id="selectedDuration">0 分钟</div>
+              </div>
+              <div class="stats-row">
+                <div class="stats-label">剩余时长：</div>
+                <div class="stats-value" id="remainingDuration">1200 分钟</div>
+              </div>
+              <div class="stats-progress">
+                <div class="progress-bar" id="durationProgressBar" style="width: 0%;"></div>
+              </div>
+            </div>
+            
+            <!-- 频次设置区 -->
+            <div class="frequency-setting">
+              <label class="form-label">每周服务频次</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="weeklyFrequency" min="2" value="2">
+                <span class="input-group-text">次/周</span>
+              </div>
+              <div class="form-text">根据地区规定，每周服务次数不得少于2次</div>
+            </div>
+            
+            <!-- 服务项目选择区域（根据数据库动态生成） -->
+            <div id="serviceItemsContainer">
+              <!-- 服务项目将通过JS根据service_item表动态生成 -->
+            </div>
+            
+            <!-- 临时占位（将被JS替换） -->
+            <div class="service-category" style="display: none;">
+              <div class="category-title">基础护理</div>
+              
+              <div class="service-item">
+                <input type="checkbox" id="item1" class="service-checkbox" 
+                       data-id="1" data-name="整理床单位" data-duration="30" 
+                       data-max-times="4" data-gender-limit="无">
+                <div class="service-info">
+                  <div class="service-name">整理床单位</div>
+                  <div class="service-rules">
+                    <span class="badge bg-secondary">30分钟/次</span>
+                    <span class="badge bg-info">月度上限：4次</span>
+                    <span class="badge bg-light text-dark">性别限制：无</span>
+                  </div>
+                </div>
+                <div class="service-actions">
+                  <input type="number" class="form-control form-control-sm service-times-input" 
+                         data-item-id="1" min="1" max="4" value="1" disabled>
+                </div>
+              </div>
+              
+              <div class="service-item">
+                <input type="checkbox" id="item2" class="service-checkbox" 
+                       data-id="2" data-name="口腔清洁" data-duration="15" 
+                       data-max-times="16" data-gender-limit="无">
+                <div class="service-info">
+                  <div class="service-name">口腔清洁</div>
+                  <div class="service-rules">
+                    <span class="badge bg-secondary">15分钟/次</span>
+                    <span class="badge bg-info">月度上限：16次</span>
+                    <span class="badge bg-light text-dark">性别限制：无</span>
+                  </div>
+                </div>
+                <div class="service-actions">
+                  <input type="number" class="form-control form-control-sm service-times-input" 
+                         data-item-id="2" min="1" max="16" value="1" disabled>
+                </div>
+              </div>
+              
+              <div class="service-item">
+                <input type="checkbox" id="item3" class="service-checkbox" 
+                       data-id="3" data-name="协助进食" data-duration="45" 
+                       data-max-times="16" data-gender-limit="无">
+                <div class="service-info">
+                  <div class="service-name">协助进食</div>
+                  <div class="service-rules">
+                    <span class="badge bg-secondary">45分钟/次</span>
+                    <span class="badge bg-info">月度上限：16次</span>
+                    <span class="badge bg-light text-dark">性别限制：无</span>
+                  </div>
+                </div>
+                <div class="service-actions">
+                  <input type="number" class="form-control form-control-sm service-times-input" 
+                         data-item-id="3" min="1" max="16" value="1" disabled>
+                </div>
+              </div>
+              
+              <div class="service-item">
+                <input type="checkbox" id="item4" class="service-checkbox" 
+                       data-id="4" data-name="协助洗漱" data-duration="30" 
+                       data-max-times="8" data-gender-limit="无">
+                <div class="service-info">
+                  <div class="service-name">协助洗漱</div>
+                  <div class="service-rules">
+                    <span class="badge bg-secondary">30分钟/次</span>
+                    <span class="badge bg-info">月度上限：8次</span>
+                    <span class="badge bg-light text-dark">性别限制：无</span>
+                  </div>
+                </div>
+                <div class="service-actions">
+                  <input type="number" class="form-control form-control-sm service-times-input" 
+                         data-item-id="4" min="1" max="8" value="1" disabled>
+                </div>
+              </div>
+              
+              <div class="service-item">
+                <input type="checkbox" id="item5" class="service-checkbox" 
+                       data-id="5" data-name="协助排便" data-duration="20" 
+                       data-max-times="16" data-gender-limit="女">
+                <div class="service-info">
+                  <div class="service-name">协助排便</div>
+                  <div class="service-rules">
+                    <span class="badge bg-secondary">20分钟/次</span>
+                    <span class="badge bg-info">月度上限：16次</span>
+                    <span class="badge bg-warning">性别限制：女</span>
+                  </div>
+                </div>
+                <div class="service-actions">
+                  <input type="number" class="form-control form-control-sm service-times-input" 
+                         data-item-id="5" min="1" max="16" value="1" disabled>
+                </div>
+              </div>
+            </div>
+            
+            <div class="service-category">
+              <div class="category-title">康复护理</div>
+              
+              <div class="service-item">
+                <input type="checkbox" id="item6" class="service-checkbox" 
+                       data-id="6" data-name="肢体功能训练" data-duration="45" 
+                       data-max-times="8" data-gender-limit="无">
+                <div class="service-info">
+                  <div class="service-name">肢体功能训练</div>
+                  <div class="service-rules">
+                    <span class="badge bg-secondary">45分钟/次</span>
+                    <span class="badge bg-info">月度上限：8次</span>
+                    <span class="badge bg-light text-dark">性别限制：无</span>
+                  </div>
+                </div>
+                <div class="service-actions">
+                  <input type="number" class="form-control form-control-sm service-times-input" 
+                         data-item-id="6" min="1" max="8" value="1" disabled>
+                </div>
+              </div>
+              
+              <div class="service-item">
+                <input type="checkbox" id="item7" class="service-checkbox" 
+                       data-id="7" data-name="关节活动度训练" data-duration="30" 
+                       data-max-times="12" data-gender-limit="无">
+                <div class="service-info">
+                  <div class="service-name">关节活动度训练</div>
+                  <div class="service-rules">
+                    <span class="badge bg-secondary">30分钟/次</span>
+                    <span class="badge bg-info">月度上限：12次</span>
+                    <span class="badge bg-light text-dark">性别限制：无</span>
+                  </div>
+                </div>
+                <div class="service-actions">
+                  <input type="number" class="form-control form-control-sm service-times-input" 
+                         data-item-id="7" min="1" max="12" value="1" disabled>
+                </div>
+              </div>
+              
+              <div class="service-item">
+                <input type="checkbox" id="item8" class="service-checkbox" 
+                       data-id="8" data-name="压疮护理" data-duration="25" 
+                       data-max-times="16" data-gender-limit="无">
+                <div class="service-info">
+                  <div class="service-name">压疮护理</div>
+                  <div class="service-rules">
+                    <span class="badge bg-secondary">25分钟/次</span>
+                    <span class="badge bg-info">月度上限：16次</span>
+                    <span class="badge bg-light text-dark">性别限制：无</span>
+                  </div>
+                </div>
+                <div class="service-actions">
+                  <input type="number" class="form-control form-control-sm service-times-input" 
+                         data-item-id="8" min="1" max="16" value="1" disabled>
+                </div>
+              </div>
+            </div>
+            
+            <div class="service-category">
+              <div class="category-title">特殊护理</div>
+              
+              <div class="service-item">
+                <input type="checkbox" id="item9" class="service-checkbox" 
+                       data-id="9" data-name="导尿管护理" data-duration="20" 
+                       data-max-times="8" data-gender-limit="男">
+                <div class="service-info">
+                  <div class="service-name">导尿管护理</div>
+                  <div class="service-rules">
+                    <span class="badge bg-secondary">20分钟/次</span>
+                    <span class="badge bg-info">月度上限：8次</span>
+                    <span class="badge bg-warning">性别限制：男</span>
+                  </div>
+                </div>
+                <div class="service-actions">
+                  <input type="number" class="form-control form-control-sm service-times-input" 
+                         data-item-id="9" min="1" max="8" value="1" disabled>
+                </div>
+              </div>
+              
+              <div class="service-item">
+                <input type="checkbox" id="item10" class="service-checkbox" 
+                       data-id="10" data-name="鼻饲护理" data-duration="30" 
+                       data-max-times="16" data-gender-limit="无">
+                <div class="service-info">
+                  <div class="service-name">鼻饲护理</div>
+                  <div class="service-rules">
+                    <span class="badge bg-secondary">30分钟/次</span>
+                    <span class="badge bg-info">月度上限：16次</span>
+                    <span class="badge bg-light text-dark">性别限制：无</span>
+                  </div>
+                </div>
+                <div class="service-actions">
+                  <input type="number" class="form-control form-control-sm service-times-input" 
+                         data-item-id="10" min="1" max="16" value="1" disabled>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 底部操作按钮 -->
+            <div class="action-bar mt-4">
+              <div class="action-left">
+                <button class="btn btn-outline-secondary" id="cancelBtn">
+                  <i class="fa fa-times"></i> 取消
+                </button>
+              </div>
+              <div class="action-right">
+                <button class="btn btn-primary" id="previewBtn">
+                  <i class="fa fa-eye"></i> 预览
+                </button>
+                <button class="btn btn-danger" id="savePrintBtn">
+                  <i class="fa fa-print"></i> 保存并打印
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 预览弹窗 -->
+  <!-- 延用当前计划确认模态框 -->
+  <div class="modal fade" id="referencePlanModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">制定服务计划</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="referencePlanQuestion">是否延用上次的服务计划？</p>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="useReferencePlan" checked>
+            <label class="form-check-label" for="useReferencePlan">
+              <span id="referencePlanLabel">延用上次计划（将自动填充上次计划的服务项目和频次，可在基础上修改）</span>
+            </label>
+          </div>
+          <div class="alert alert-info mt-3" style="font-size: 12px;">
+            <i class="fa fa-info-circle"></i> <span id="referencePlanTip">提示：如果不制定新计划，系统将自动延用当前计划继续执行。</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" id="noReferencePlanBtn">不延用</button>
+          <button type="button" class="btn btn-primary" id="referencePlanConfirmBtn">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade preview-modal" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">服务计划预览</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="preview-content" id="previewContent">
+            <!-- 预览内容将通过JS动态生成 -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">关闭预览</button>
+          <button type="button" class="btn btn-primary" id="printBtn">
+            <i class="fa fa-print"></i> 打印
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 打印预览模态框 -->
+  <div class="modal fade print-preview-modal" id="printPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header no-print">
+          <h5 class="modal-title" id="printPreviewTitle">打印预览</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- 打印设置 -->
+          <div class="print-settings no-print">
+            <div class="print-settings-row">
+              <div class="print-settings-group">
+                <label for="printPaperSize">纸张大小：</label>
+                <select class="form-select form-select-sm" id="printPaperSize" style="width: 120px;">
+                  <option value="A4">A4</option>
+                  <option value="A3">A3</option>
+                  <option value="Letter">Letter</option>
+                </select>
+              </div>
+              <div class="print-settings-group">
+                <label for="printOrientation">打印方向：</label>
+                <select class="form-select form-select-sm" id="printOrientation" style="width: 120px;">
+                  <option value="portrait">纵向</option>
+                  <option value="landscape">横向</option>
+                </select>
+              </div>
+              <div class="print-settings-group">
+                <span class="text-muted" id="printPreviewInfo">共 0 份计划</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 打印预览内容 -->
+          <div class="print-preview-content" id="printPreviewContent">
+            <!-- 打印内容将通过JS动态生成 -->
+          </div>
+        </div>
+        <div class="modal-footer no-print">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" id="confirmPrintBtn">
+            <i class="fa fa-print"></i> 确认打印
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    $(function() {
+      // 统一的提示函数
+      function showMessage(title, message, type = 'info') {
+        const alertClass = type === 'success' ? 'alert-success' : 
+                          type === 'error' ? 'alert-danger' : 
+                          type === 'warning' ? 'alert-warning' : 'alert-info';
+        const alertHtml = `
+          <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <strong>${title}</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        `;
+        $('body').append(alertHtml);
+        setTimeout(() => {
+          $('.alert').fadeOut(() => $(this).remove());
+        }, 3000);
+      }
+      
+      // 全局变量
+      let currentObjectId = null;
+      let currentObjectData = null;
+      let totalDurationLimit = 0;
+      
+      // 初始化模态框
+      const previewModal = new bootstrap.Modal('#previewModal');
+      
+      // 服务项目数据（根据service_item数据库表）
+      const serviceItemsData = [
+        { Id: 1, item_name: '整理床单位', work_time: 5, maxnum_perweek: null, gender_limit: null },
+        { Id: 2, item_name: '更换被单', work_time: 15, maxnum_perweek: 1, gender_limit: null },
+        { Id: 3, item_name: '面部清洁', work_time: 5, maxnum_perweek: null, gender_limit: null },
+        { Id: 4, item_name: '梳头', work_time: 5, maxnum_perweek: null, gender_limit: '女' },
+        { Id: 5, item_name: '理发/剪发', work_time: 15, maxnum_perweek: 1, gender_limit: null },
+        { Id: 6, item_name: '剃须', work_time: 5, maxnum_perweek: null, gender_limit: '男' },
+        { Id: 7, item_name: '口腔清洁/护理', work_time: 15, maxnum_perweek: null, gender_limit: null },
+        { Id: 8, item_name: '洗发', work_time: 20, maxnum_perweek: 2, gender_limit: null },
+        { Id: 9, item_name: '指/趾甲护理', work_time: 5, maxnum_perweek: 2, gender_limit: null },
+        { Id: 10, item_name: '手足清洁/护理', work_time: 15, maxnum_perweek: null, gender_limit: null },
+        { Id: 11, item_name: '耳部护理', work_time: 15, maxnum_perweek: null, gender_limit: null },
+        { Id: 12, item_name: '温水擦浴(床上擦浴)', work_time: 20, maxnum_perweek: null, gender_limit: null },
+        { Id: 13, item_name: '淋浴(盆浴、淋浴)', work_time: 20, maxnum_perweek: null, gender_limit: null },
+        { Id: 14, item_name: '洗澡机淋浴', work_time: 20, maxnum_perweek: null, gender_limit: null },
+        { Id: 15, item_name: '协助更衣(更换上衣/裤子)', work_time: 5, maxnum_perweek: null, gender_limit: null },
+        { Id: 16, item_name: '会阴清洁/护理', work_time: 15, maxnum_perweek: null, gender_limit: null },
+        { Id: 17, item_name: '协助进食/水', work_time: 20, maxnum_perweek: null, gender_limit: null },
+        { Id: 18, item_name: '床上进食', work_time: 20, maxnum_perweek: null, gender_limit: null },
+        { Id: 19, item_name: '鼻饲', work_time: 20, maxnum_perweek: null, gender_limit: null },
+        { Id: 20, item_name: '协助如厕', work_time: 10, maxnum_perweek: null, gender_limit: null },
+        { Id: 21, item_name: '尿垫、纸尿裤更换', work_time: 5, maxnum_perweek: null, gender_limit: null },
+        { Id: 22, item_name: '失禁护理', work_time: 8, maxnum_perweek: null, gender_limit: null },
+        { Id: 23, item_name: '床上使用便器', work_time: 10, maxnum_perweek: null, gender_limit: null },
+        { Id: 24, item_name: '开塞露通便', work_time: 15, maxnum_perweek: null, gender_limit: null },
+        { Id: 25, item_name: '人工取便', work_time: 20, maxnum_perweek: null, gender_limit: null },
+        { Id: 26, item_name: '集尿袋更换', work_time: 5, maxnum_perweek: null, gender_limit: null },
+        { Id: 27, item_name: '人工肛门便袋护理', work_time: 5, maxnum_perweek: null, gender_limit: null },
+        { Id: 28, item_name: '翻身叩背排痰', work_time: 10, maxnum_perweek: null, gender_limit: null },
+        { Id: 29, item_name: '协助床上移动', work_time: 5, maxnum_perweek: null, gender_limit: null },
+        { Id: 30, item_name: '借助器具移动(含协助轮椅转移)', work_time: 5, maxnum_perweek: null, gender_limit: null },
+        { Id: 31, item_name: '协助床椅转移', work_time: 5, maxnum_perweek: null, gender_limit: null },
+        { Id: 32, item_name: '冰袋使用', work_time: 35, maxnum_perweek: null, gender_limit: null },
+        { Id: 33, item_name: '冷湿敷', work_time: 15, maxnum_perweek: null, gender_limit: null },
+        { Id: 34, item_name: '温水乙醇擦浴', work_time: 20, maxnum_perweek: null, gender_limit: null },
+        { Id: 35, item_name: '压力性损伤预防护理', work_time: 15, maxnum_perweek: null, gender_limit: null },
+        { Id: 36, item_name: '关节活动练习', work_time: 8, maxnum_perweek: null, gender_limit: null },
+        { Id: 37, item_name: '生活自理能力训练', work_time: 20, maxnum_perweek: null, gender_limit: null },
+        { Id: 38, item_name: '安全保护带使用', work_time: 10, maxnum_perweek: null, gender_limit: null },
+        { Id: 39, item_name: '生命体征检测(T、P、R)', work_time: 15, maxnum_perweek: null, gender_limit: null },
+        { Id: 40, item_name: '吸氧', work_time: 10, maxnum_perweek: null, gender_limit: null },
+        { Id: 41, item_name: '药物管理', work_time: 15, maxnum_perweek: null, gender_limit: null },
+        { Id: 42, item_name: '口服给药', work_time: 5, maxnum_perweek: null, gender_limit: null }
+      ];
+      
+      // 服务项目分类（用于分组显示）
+      const serviceCategories = {
+        '基础护理': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
+        '康复护理': [36, 37],
+        '特殊护理': [32, 33, 34, 35, 38, 39, 40, 41, 42]
+      };
+      
+      // 动态生成服务项目列表
+      function renderServiceItems() {
+        const container = $('#serviceItemsContainer');
+        container.empty();
+        
+        // 遍历分类
+        Object.keys(serviceCategories).forEach(categoryName => {
+          const categoryDiv = $('<div class="service-category"></div>');
+          categoryDiv.append(`<div class="category-title">${categoryName}</div>`);
+          
+          // 获取该分类下的服务项目
+          const categoryItemIds = serviceCategories[categoryName];
+          categoryItemIds.forEach(itemId => {
+            const item = serviceItemsData.find(s => s.Id === itemId);
+            if (!item) return;
+            
+            // 计算月度上限（如果每周最多N次，则月度最多约4*N次）
+            const maxMonthlyTimes = item.maxnum_perweek ? item.maxnum_perweek * 4 : null;
+            const maxTimesText = maxMonthlyTimes ? `月度上限：${maxMonthlyTimes}次` : '不限制次数';
+            const maxTimesValue = maxMonthlyTimes || 999;
+            
+            // 性别限制文本
+            const genderLimitText = item.gender_limit || '无';
+            const genderLimitBadgeClass = item.gender_limit === '男' || item.gender_limit === '女' ? 'bg-warning' : 'bg-light text-dark';
+            
+            const itemHtml = `
+              <div class="service-item">
+                <input type="checkbox" id="item${item.Id}" class="service-checkbox" 
+                       data-id="${item.Id}" data-name="${item.item_name}" data-duration="${item.work_time}" 
+                       data-max-times="${maxTimesValue}" data-gender-limit="${genderLimitText}">
+                <div class="service-info">
+                  <div class="service-name">${item.item_name}</div>
+                  <div class="service-rules">
+                    <span class="badge bg-secondary">${item.work_time}分钟/次</span>
+                    <span class="badge bg-info">${maxTimesText}</span>
+                    <span class="badge ${genderLimitBadgeClass}">性别限制：${genderLimitText}</span>
+                  </div>
+                </div>
+                <div class="service-actions">
+                  <input type="number" class="form-control form-control-sm service-times-input" 
+                         data-item-id="${item.Id}" min="1" max="${maxTimesValue}" value="1" disabled>
+                </div>
+              </div>
+            `;
+            categoryDiv.append(itemHtml);
+          });
+          
+          container.append(categoryDiv);
+        });
+        
+        // 重新绑定事件
+        $('.service-checkbox').off('change').on('change', function() {
+          const isChecked = $(this).prop('checked');
+          const itemId = $(this).data('id');
+          const $timesInput = $(`.service-times-input[data-item-id="${itemId}"]`);
+          
+          $timesInput.prop('disabled', !isChecked);
+          
+          if (isChecked) {
+            calculateTotalDuration();
+          } else {
+            calculateTotalDuration();
+          }
+        });
+        
+        $('.service-times-input').off('change').on('change', function() {
+          calculateTotalDuration();
+        });
+      }
+      
+      // 初始化时渲染服务项目
+      renderServiceItems();
+      
+      // 检查是否有当前计划
+      function checkCurrentPlan(objectId) {
+        // 模拟检查逻辑（实际项目中应从后端获取）
+        // 示例：对象ID为2和3的已有计划
+        return objectId === 2 || objectId === 3;
+      }
+      
+      // 获取上次计划数据（可能是当前计划或其他服务对象的计划）
+      function getLastPlanData(objectId) {
+        // 首先尝试获取当前计划
+        const hasCurrentPlan = checkCurrentPlan(objectId);
+        if (hasCurrentPlan) {
+          // 如果有当前计划，返回当前计划数据
+          return {
+            items: [
+              { id: 1, name: '整理床单位', duration: 15, times: 8, checked: true },
+              { id: 2, name: '协助进食', duration: 30, times: 8, checked: true },
+              { id: 3, name: '协助洗漱', duration: 20, times: 8, checked: true }
+            ],
+            weeklyFrequency: 2,
+            source: 'current' // 标记来源为当前计划
+          };
+        } else {
+          // 如果没有当前计划，尝试获取其他相似服务对象的计划作为参考
+          // 实际项目中应该根据失能等级、性别等条件匹配相似计划
+          return {
+            items: [
+              { id: 1, name: '整理床单位', duration: 15, times: 8, checked: true },
+              { id: 2, name: '协助进食', duration: 30, times: 8, checked: true }
+            ],
+            weeklyFrequency: 2,
+            source: 'reference' // 标记来源为参考计划
+          };
+        }
+      }
+      
+      // 查看计划按钮点击事件
+      $(document).on('click', '.view-plan-btn', function() {
+        const objectId = $(this).data('id');
+        const objectName = $(this).data('name');
+        
+        // 模拟加载计划数据并显示预览
+        alert(`查看【${objectName}】的服务计划\n\n计划制定时间：2024-09-01\n月度总时长：1200分钟\n每周频次：2次/周\n\n服务项目：\n- 整理床单位：8次/月\n- 协助进食：8次/月\n- 协助洗漱：8次/月`);
+        
+        // 实际项目中应该打开一个模态框显示完整的计划详情
+      });
+      
+      // 查询按钮点击事件
+      $('#queryBtn').click(function() {
+        const caregiver = $('#filterCaregiver').val();
+        const startDate = $('#filterStartDate').val();
+        
+        // 模拟筛选逻辑
+        let filteredCount = 0;
+        $('#objectListBody tr').each(function() {
+          const rowCaregiver = $(this).find('td:eq(3)').text();
+          const rowStartDate = $(this).find('td:eq(4)').text();
+          
+          const caregiverMatch = caregiver === 'all' || rowCaregiver === caregiver;
+          const dateMatch = !startDate || rowStartDate === startDate;
+          
+          const isMatch = caregiverMatch && dateMatch;
+          $(this).toggle(isMatch);
+          if (isMatch) filteredCount++;
+        });
+        
+        showMessage('提示', `已应用筛选条件！护理员：${caregiver === 'all' ? '不限' : caregiver}，服务开始日期：${startDate || '不限'}`, 'info');
+      });
+      
+      // 重置筛选按钮点击事件
+      $('#resetFilterBtn').click(function() {
+        $('#filterCaregiver').val('all');
+        $('#filterStartDate').val('');
+        
+        // 显示所有记录
+        $('#objectListBody tr').show();
+      });
+      
+      // 制定计划按钮点击事件
+      $(document).on('click', '.create-plan-btn', function() {
+        currentObjectId = $(this).data('id');
+        currentObjectData = {
+          id: currentObjectId,
+          name: $(this).data('name'),
+          idCard: $(this).data('id-card'),
+          disabilityLevel: $(this).data('disability-level'),
+          caregiver: $(this).data('caregiver'),
+          startDate: $(this).data('start-date'),
+          gender: $(this).data('gender')
+        };
+        
+        // 无论是否有当前计划，都询问是否延用上次的计划
+        const confirmModal = new bootstrap.Modal('#referencePlanModal');
+        $('#referencePlanModal').data('object-data', currentObjectData);
+        
+        // 检查是否有当前计划，用于提示信息
+        const hasCurrentPlan = checkCurrentPlan(currentObjectId);
+        if (hasCurrentPlan) {
+          // 如果有当前计划，默认勾选延用，提示延用当前计划
+          $('#useReferencePlan').prop('checked', true);
+          $('#referencePlanQuestion').text('是否延用当前服务计划？');
+          $('#referencePlanLabel').text('延用当前计划（将自动填充当前计划的服务项目和频次，可在基础上修改）');
+          $('#referencePlanTip').text('提示：如果不制定新计划，系统将自动延用当前计划继续执行。');
+        } else {
+          // 如果没有当前计划，默认勾选延用，提示参考其他计划
+          $('#useReferencePlan').prop('checked', true);
+          $('#referencePlanQuestion').text('是否参考其他服务对象的计划？');
+          $('#referencePlanLabel').text('参考其他计划（将自动填充相似服务对象的计划数据，可在基础上修改）');
+          $('#referencePlanTip').text('提示：首次制定计划时，可以参考其他相似服务对象的计划作为模板。');
+        }
+        
+        confirmModal.show();
+      });
+      
+      // 延用当前计划确认按钮
+      $('#referencePlanConfirmBtn').click(function() {
+        const useReference = $('#useReferencePlan').is(':checked');
+        const objectData = $('#referencePlanModal').data('object-data');
+        currentObjectData = objectData;
+        
+        // 关闭确认弹窗
+        bootstrap.Modal.getInstance('#referencePlanModal').hide();
+        
+        // 开始制定计划
+        startCreatePlan(useReference);
+      });
+      
+      // 不延用当前计划按钮（制定全新计划）
+      $('#noReferencePlanBtn').click(function() {
+        const objectData = $('#referencePlanModal').data('object-data');
+        currentObjectData = objectData;
+        
+        // 关闭确认弹窗
+        bootstrap.Modal.getInstance('#referencePlanModal').hide();
+        
+        // 开始制定计划（不延用当前计划）
+        startCreatePlan(false);
+      });
+      
+      // 开始制定计划的函数
+      function startCreatePlan(useReference) {
+        // 更新编辑页面标题
+        $('#editPageTitle').text(`制定服务计划 - ${currentObjectData.name}`);
+        
+        // 根据失能等级设置时长上限
+        switch(currentObjectData.disabilityLevel) {
+          case '一级':
+            totalDurationLimit = 1200; // 20小时 = 1200分钟
+            break;
+          case '二级':
+            totalDurationLimit = 1500; // 25小时 = 1500分钟
+            break;
+          case '三级':
+            totalDurationLimit = 1800; // 30小时 = 1800分钟
+            break;
+        }
+        
+        // 更新时长统计显示
+        $('#totalDurationLimit').text(`${totalDurationLimit} 分钟 (${totalDurationLimit/60}小时)`);
+        resetDurationStats();
+        
+        // 隐藏列表页，显示编辑页
+        $('#objectListBody').closest('.card').addClass('d-none');
+        $('.filter-bar').addClass('d-none');
+        $('#planEditPage').removeClass('d-none');
+        
+        // 重新渲染服务项目（根据当前服务对象）
+        renderServiceItems();
+        
+        // 如果选择延用当前计划，加载当前计划数据
+        if (useReference) {
+          loadPreviousPlan();
+        }
+        
+        // 根据性别限制服务项目
+        updateGenderRestrictedItems();
+      }
+      
+      // 加载上次计划数据（用于延用）
+      function loadPreviousPlan() {
+        // 获取上次计划数据（可能是当前计划或参考计划）
+        const previousPlan = getLastPlanData(currentObjectId);
+        
+        // 应用计划数据
+        previousPlan.items.forEach(item => {
+          const $checkbox = $(`.service-checkbox[data-id="${item.id}"]`);
+          if ($checkbox.length) {
+            $checkbox.prop('checked', item.checked);
+            const $timesInput = $(`.service-times-input[data-item-id="${item.id}"]`);
+            $timesInput.val(item.times).prop('disabled', false);
+          }
+        });
+        
+        if (previousPlan.weeklyFrequency) {
+          $('#weeklyFrequency').val(previousPlan.weeklyFrequency);
+        }
+        
+        // 更新时长统计
+        updateDurationStats();
+        
+        // 显示提示信息
+        if (previousPlan.source === 'current') {
+          showMessage('提示', '已加载当前计划数据，您可以在基础上进行修改', 'info');
+        } else {
+          showMessage('提示', '已加载参考计划数据，您可以在基础上进行修改', 'info');
+        }
+      }
+      
+      // 返回列表按钮点击事件
+      $('#backToListBtn, #cancelBtn').click(function() {
+        // 隐藏编辑页，显示列表页
+        $('#planEditPage').addClass('d-none');
+        $('#objectListBody').closest('.card').removeClass('d-none');
+        $('#filter-bar').removeClass('d-none');
+        
+        // 重置服务项目选择
+        $('.service-checkbox').prop('checked', false);
+        $('.service-times-input').prop('disabled', true).val(1);
+        
+        // 清空当前对象数据
+        currentObjectId = null;
+        currentObjectData = null;
+      });
+      
+      // 根据性别更新服务项目可用性
+      function updateGenderRestrictedItems() {
+        if (!currentObjectData) return;
+        
+        $('.service-checkbox').each(function() {
+          const genderLimit = $(this).data('gender-limit');
+          const $item = $(this).closest('.service-item');
+          
+          if (genderLimit !== '无' && genderLimit !== currentObjectData.gender) {
+            $(this).prop('disabled', true);
+            $item.addClass('opacity-50');
+            $item.find('.service-rules').append('<span class="badge bg-danger ms-1">性别不匹配</span>');
+          } else {
+            $(this).prop('disabled', false);
+            $item.removeClass('opacity-50');
+            $item.find('.badge.bg-danger').remove();
+          }
+        });
+      }
+      
+      // 服务项目复选框点击事件（已在renderServiceItems中绑定，这里保留作为备用）
+      
+      // 计算已选时长
+      function calculateTotalDuration() {
+        let selectedDuration = 0;
+        
+        $('.service-checkbox:checked').each(function() {
+          const duration = $(this).data('duration');
+          const itemId = $(this).data('id');
+          const times = parseInt($(`.service-times-input[data-item-id="${itemId}"]`).val()) || 1;
+          
+          selectedDuration += duration * times;
+        });
+        
+        // 更新统计显示
+        $('#selectedDuration').text(`${selectedDuration} 分钟`);
+        
+        const remainingDuration = totalDurationLimit - selectedDuration;
+        $('#remainingDuration').text(`${remainingDuration} 分钟`);
+        
+        // 更新进度条
+        const progressPercent = Math.min(100, Math.max(0, (selectedDuration / totalDurationLimit) * 100));
+        $('#durationProgressBar').css('width', `${progressPercent}%`);
+        
+        // 根据剩余时长改变颜色
+        if (remainingDuration < 0) {
+          $('#remainingDuration').addClass('text-danger');
+          $('#durationProgressBar').addClass('bg-danger').removeClass('bg-primary');
+        } else {
+          $('#remainingDuration').removeClass('text-danger');
+          $('#durationProgressBar').removeClass('bg-danger').addClass('bg-primary');
+        }
+        
+        return selectedDuration;
+      }
+      
+      // 重置时长统计
+      function resetDurationStats() {
+        $('#selectedDuration').text('0 分钟');
+        $('#remainingDuration').text(`${totalDurationLimit} 分钟`);
+        $('#durationProgressBar').css('width', '0%');
+        $('#remainingDuration').removeClass('text-danger');
+        $('#durationProgressBar').removeClass('bg-danger').addClass('bg-primary');
+      }
+      
+      // 预览按钮点击事件
+      $('#previewBtn').click(function() {
+        if (!currentObjectData) return;
+        
+        // 计算已选时长
+        const selectedDuration = calculateTotalDuration();
+        
+        // 验证时长是否在合理范围内
+        if (selectedDuration <= 0) {
+          showMessage('提示', '请至少选择一项服务项目', 'warning');
+          return;
+        }
+        
+        if (selectedDuration > totalDurationLimit) {
+          if (!confirm('已选时长超过月度上限，是否继续预览？')) {
+            return;
+          }
+        }
+        
+        // 生成预览内容
+        generatePreviewContent();
+        
+        // 显示预览模态框
+        previewModal.show();
+      });
+      
+      // 生成预览内容
+      function generatePreviewContent() {
+        if (!currentObjectData) return;
+        
+        // 获取已选服务项目
+        const selectedItems = [];
+        $('.service-checkbox:checked').each(function() {
+          const itemId = $(this).data('id');
+          selectedItems.push({
+            name: $(this).data('name'),
+            duration: $(this).data('duration'),
+            times: parseInt($(`.service-times-input[data-item-id="${itemId}"]`).val()) || 1,
+            totalDuration: $(this).data('duration') * (parseInt($(`.service-times-input[data-item-id="${itemId}"]`).val()) || 1)
+          });
+        });
+        
+        // 获取每周服务频次
+        const weeklyFrequency = $('#weeklyFrequency').val() || 2;
+        
+        // 生成预览HTML
+        let previewHtml = `
+          <div class="institution-header">
+            <div class="institution-name">XX市居家养老服务中心</div>
+            <div>服务计划</div>
+          </div>
+          
+          <div class="info-section">
+            <table class="info-table">
+              <tr>
+                <td class="label-cell">服务对象：</td>
+                <td>${currentObjectData.name}（${currentObjectData.idCard}）</td>
+                <td class="label-cell">失能等级：</td>
+                <td>${currentObjectData.disabilityLevel}</td>
+              </tr>
+              <tr>
+                <td class="label-cell">负责护理员：</td>
+                <td>${currentObjectData.caregiver}</td>
+                <td class="label-cell">服务开始日期：</td>
+                <td>${currentObjectData.startDate}</td>
+              </tr>
+              <tr>
+                <td class="label-cell">每周服务频次：</td>
+                <td>${weeklyFrequency}次/周</td>
+                <td class="label-cell">月度总时长：</td>
+                <td>${calculateTotalDuration()}分钟（${(calculateTotalDuration()/60).toFixed(1)}小时）</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="health-summary">
+            <div class="summary-title">身体状况摘要：</div>
+            <div class="summary-content">
+              认知功能：轻度认知障碍，定向力基本正常，能进行简单交流<br>
+              行动能力：需部分协助翻身、坐起，室内需扶拐行走，室外需轮椅<br>
+              肢体状况：左侧上肢活动受限，双下肢无力，站立不稳<br>
+              其他状况：骶尾部有1期压疮，大便失禁，需协助进食
+            </div>
+          </div>
+          
+          <div class="service-table-container">
+            <table class="service-table">
+              <thead>
+                <tr>
+                  <th>序号</th>
+                  <th>服务项目</th>
+                  <th>单次时长（分钟）</th>
+                  <th>月度次数</th>
+                  <th>月度总时长（分钟）</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        
+        // 添加服务项目行
+        selectedItems.forEach((item, index) => {
+          previewHtml += `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${item.name}</td>
+              <td>${item.duration}</td>
+              <td>${item.times}</td>
+              <td>${item.totalDuration}</td>
+            </tr>
+          `;
+        });
+        
+        // 添加合计行
+        previewHtml += `
+              <tr>
+                <td colspan="4" style="text-align: right; font-weight: bold;">合计：</td>
+                <td style="font-weight: bold;">${calculateTotalDuration()}</td>
+              </tr>
+            </tbody>
+          </table>
+        `;
+        
+        // 添加签字栏
+        previewHtml += `
+          <div class="signature-section">
+            <div class="signature-item">
+              <div>服务对象/家属签字：</div>
+              <div class="signature-line"></div>
+              <div>日期：________年____月____日</div>
+            </div>
+            <div class="signature-item">
+              <div>护理员签字：</div>
+              <div class="signature-line"></div>
+              <div>日期：________年____月____日</div>
+            </div>
+            <div class="signature-item">
+              <div>机构负责人签字：</div>
+              <div class="signature-line"></div>
+              <div>日期：________年____月____日</div>
+            </div>
+          </div>
+          
+          <div class="stamp-area">
+            <div class="stamp-placeholder">机构盖章处</div>
+          </div>
+        `;
+        
+        // 更新预览内容
+        $('#previewContent').html(previewHtml);
+      }
+      
+      // 打印按钮点击事件
+      $('#printBtn').click(function() {
+        // 打印预览内容
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>服务计划 - ${currentObjectData.name}</title>
+              <style>
+                body { font-family: "宋体", serif; padding: 20px; }
+                .institution-header { text-align: center; margin-bottom: 20px; }
+                .institution-name { font-size: 22px; font-weight: bold; margin-bottom: 5px; }
+                .plan-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 20px; }
+                .info-section { margin-bottom: 20px; }
+                .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                .info-table td { border: 1px solid #000; padding: 6px 10px; font-size: 14px; }
+                .info-table .label-cell { width: 100px; background: #f8f8f8; font-weight: bold; }
+                .health-summary { margin-bottom: 20px; }
+                .summary-title { font-weight: bold; margin-bottom: 8px; }
+                .summary-content { font-size: 14px; line-height: 1.6; }
+                .service-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                .service-table th, .service-table td { border: 1px solid #000; padding: 8px 10px; font-size: 14px; text-align: center; }
+                .service-table th { background: #f8f8f8; font-weight: bold; }
+                .signature-section { display: flex; justify-content: space-between; margin-top: 40px; font-size: 14px; }
+                .signature-item { text-align: center; width: 30%; }
+                .signature-line { border-bottom: 1px solid #000; margin: 10px 0; height: 30px; }
+                .stamp-area { position: relative; height: 80px; margin-top: 30px; }
+                .stamp-placeholder { position: absolute; right: 20px; top: 0; width: 120px; height: 80px; border: 1px dashed #666; text-align: center; line-height: 80px; font-size: 12px; color: #666; }
+              </style>
+            </head>
+            <body>
+              ${$('#previewContent').html()}
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+      });
+      
+      // 保存并打印按钮点击事件
+      $('#savePrintBtn').click(function() {
+        if (!currentObjectData) return;
+        
+        // 计算已选时长
+        const selectedDuration = calculateTotalDuration();
+        
+        // 验证表单
+        if (selectedDuration <= 0) {
+          showMessage('提示', '请至少选择一项服务项目', 'warning');
+          return;
+        }
+        
+        if (selectedDuration > totalDurationLimit) {
+          if (!confirm('已选时长超过月度上限，是否继续保存？')) {
+            return;
+          }
+        }
+        
+        const weeklyFrequency = $('#weeklyFrequency').val();
+        if (weeklyFrequency < 2) {
+          showMessage('提示', '每周服务频次不得少于2次', 'warning');
+          return;
+        }
+        
+        // 模拟保存逻辑
+        alert(`服务计划已保存！\n服务对象：${currentObjectData.name}\n护理员：${currentObjectData.caregiver}\n月度总时长：${selectedDuration}分钟\n每周频次：${weeklyFrequency}次/周`);
+        
+        // 生成预览内容并打印
+        generatePreviewContent();
+        $('#printBtn').click();
+        
+        // 返回列表页
+        $('#backToListBtn').click();
+      });
+      
+      // ==================== 服务计划打印功能 ====================
+      // 初始化打印预览模态框
+      const printPreviewModal = new bootstrap.Modal('#printPreviewModal');
+      
+      // 模拟服务计划数据
+      const mockServicePlans = {
+        '李护理': {
+          '2024-09': [
+            { clientId: 1, clientName: '陈一', idCard: '330106********1234', status: 'created', duration: 1200, frequency: 2, caregiver: '李护理' },
+            { clientId: 2, clientName: '吴二', idCard: '330105********5678', status: 'created', duration: 1500, frequency: 3, caregiver: '李护理' },
+            { clientId: 6, clientName: '周六', idCard: '330106********1111', status: 'not_created', duration: 0, frequency: 0, caregiver: '李护理' }
+          ]
+        },
+        '王护理': {
+          '2024-09': [
+            { clientId: 4, clientName: '冯四', idCard: '330602********3456', status: 'created', duration: 1800, frequency: 4, caregiver: '王护理' }
+          ]
+        },
+        '张护理': {
+          '2024-09': [
+            { clientId: 3, clientName: '郑三', idCard: '330602********9012', status: 'created', duration: 1200, frequency: 2, caregiver: '张护理' }
+          ]
+        }
+      };
+
+      // 按护理员打印 - 查询计划
+      $('#loadCaregiverPlansBtn').click(function() {
+        const caregiver = $('#printCaregiver').val();
+        const month = $('#printServiceMonth').val();
+        
+        if (!caregiver || !month) {
+          showMessage('提示', '请选择护理员和服务月份', 'warning');
+          return;
+        }
+        
+        loadCaregiverPlans(caregiver, month);
+      });
+
+      // 加载护理员的服务计划列表
+      function loadCaregiverPlans(caregiver, month) {
+        const tbody = $('#caregiverPlanTableBody');
+        tbody.empty();
+        
+        // 模拟数据查询
+        const plans = mockServicePlans[caregiver]?.[month] || [];
+        
+        if (plans.length === 0) {
+          tbody.html('<tr><td colspan="6" class="text-center text-muted">该护理员在所选月份暂无服务计划</td></tr>');
+          $('#batchPrintCaregiverBtn').prop('disabled', true);
+          return;
+        }
+        
+        plans.forEach((plan, index) => {
+          const statusBadge = plan.status === 'created' 
+            ? '<span class="plan-status-badge status-created">已制定</span>'
+            : '<span class="plan-status-badge status-not-created">未制定</span>';
+          
+          const durationText = plan.status === 'created' 
+            ? `${plan.duration}分钟 (${(plan.duration/60).toFixed(1)}小时)`
+            : '<span class="text-danger">暂无计划</span>';
+          
+          const frequencyText = plan.status === 'created' 
+            ? `${plan.frequency}次/周`
+            : '-';
+          
+          const rowClass = plan.status === 'not_created' ? 'table-danger' : '';
+          const checkboxDisabled = plan.status === 'not_created' ? 'disabled' : '';
+          
+          const row = `
+            <tr class="${rowClass}">
+              <td>
+                <input type="checkbox" class="caregiver-plan-checkbox" 
+                       data-client-id="${plan.clientId}"
+                       data-client-name="${plan.clientName}"
+                       data-id-card="${plan.idCard}"
+                       data-status="${plan.status}"
+                       ${checkboxDisabled}>
+              </td>
+              <td>${plan.clientName}</td>
+              <td>${plan.idCard}</td>
+              <td>${statusBadge}</td>
+              <td>${durationText}</td>
+              <td>${frequencyText}</td>
+            </tr>
+          `;
+          tbody.append(row);
+        });
+        
+        // 重新绑定事件
+        $('.caregiver-plan-checkbox').off('change').on('change', updateCaregiverPrintButton);
+        $('#selectAllCaregiverPlans').off('change').on('change', function() {
+          const isChecked = $(this).prop('checked');
+          $('.caregiver-plan-checkbox:not(:disabled)').prop('checked', isChecked);
+          updateCaregiverPrintButton();
+        });
+        
+        updateCaregiverPrintButton();
+      }
+
+      // 更新护理员打印按钮状态
+      function updateCaregiverPrintButton() {
+        const selectedCount = $('.caregiver-plan-checkbox:checked').length;
+        $('#selectedCaregiverCount').text(`已选择 ${selectedCount} 个服务对象`);
+        $('#batchPrintCaregiverBtn').prop('disabled', selectedCount === 0);
+      }
+
+      // 按服务对象打印 - 查询计划
+      $('#loadClientPlansBtn').click(function() {
+        const searchText = $('#searchClient').val().trim();
+        const region = $('#printClientRegion').val();
+        const status = $('#printClientStatus').val();
+        
+        loadClientPlans(searchText, region, status);
+      });
+
+      // 加载服务对象的计划列表
+      function loadClientPlans(searchText, region, status) {
+        const tbody = $('#clientPlanTableBody');
+        tbody.empty();
+        
+        // 模拟数据查询（合并所有护理员的数据）
+        let allPlans = [];
+        Object.keys(mockServicePlans).forEach(caregiver => {
+          Object.keys(mockServicePlans[caregiver]).forEach(month => {
+            mockServicePlans[caregiver][month].forEach(plan => {
+              allPlans.push({...plan, month: month});
+            });
+          });
+        });
+        
+        // 按搜索条件筛选
+        if (searchText) {
+          allPlans = allPlans.filter(plan => 
+            plan.clientName.includes(searchText) || plan.idCard.includes(searchText)
+          );
+        }
+        
+        if (allPlans.length === 0) {
+          tbody.html('<tr><td colspan="7" class="text-center text-muted">未找到符合条件的服务计划</td></tr>');
+          $('#batchPrintClientBtn').prop('disabled', true);
+          return;
+        }
+        
+        allPlans.forEach((plan, index) => {
+          const statusBadge = plan.status === 'created' 
+            ? '<span class="plan-status-badge status-created">已制定</span>'
+            : '<span class="plan-status-badge status-not-created">未制定</span>';
+          
+          const durationText = plan.status === 'created' 
+            ? `${plan.duration}分钟`
+            : '<span class="text-danger">暂无计划</span>';
+          
+          const rowClass = plan.status === 'not_created' ? 'table-danger' : '';
+          const checkboxDisabled = plan.status === 'not_created' ? 'disabled' : '';
+          
+          const row = `
+            <tr class="${rowClass}">
+              <td>
+                <input type="checkbox" class="client-plan-checkbox" 
+                       data-client-id="${plan.clientId}"
+                       data-client-name="${plan.clientName}"
+                       data-id-card="${plan.idCard}"
+                       data-month="${plan.month}"
+                       data-caregiver="${plan.caregiver}"
+                       data-status="${plan.status}"
+                       ${checkboxDisabled}>
+              </td>
+              <td>${plan.clientName}</td>
+              <td>${plan.idCard}</td>
+              <td>${plan.month}</td>
+              <td>${plan.caregiver}</td>
+              <td>${statusBadge}</td>
+              <td>${durationText}</td>
+            </tr>
+          `;
+          tbody.append(row);
+        });
+        
+        // 重新绑定事件
+        $('.client-plan-checkbox').off('change').on('change', updateClientPrintButton);
+        $('#selectAllClientPlans').off('change').on('change', function() {
+          const isChecked = $(this).prop('checked');
+          $('.client-plan-checkbox:not(:disabled)').prop('checked', isChecked);
+          updateClientPrintButton();
+        });
+        
+        updateClientPrintButton();
+      }
+
+      // 更新服务对象打印按钮状态
+      function updateClientPrintButton() {
+        const selectedCount = $('.client-plan-checkbox:checked').length;
+        $('#selectedClientCount').text(`已选择 ${selectedCount} 个计划`);
+        $('#batchPrintClientBtn').prop('disabled', selectedCount === 0);
+      }
+
+      // 批量打印（按护理员）
+      $('#batchPrintCaregiverBtn').click(function() {
+        const selectedPlans = [];
+        $('.caregiver-plan-checkbox:checked').each(function() {
+          const plan = {
+            clientId: $(this).data('client-id'),
+            clientName: $(this).data('client-name'),
+            idCard: $(this).data('id-card'),
+            status: $(this).data('status')
+          };
+          selectedPlans.push(plan);
+        });
+        
+        if (selectedPlans.length === 0) {
+          showMessage('提示', '请至少选择一个服务对象', 'warning');
+          return;
+        }
+        
+        // 检查是否有未制定的计划
+        const notCreatedPlans = selectedPlans.filter(p => p.status === 'not_created');
+        if (notCreatedPlans.length > 0) {
+          showMessage('提示', `以下服务对象暂无服务计划，不可打印：${notCreatedPlans.map(p => p.clientName).join('、')}`, 'warning');
+          return;
+        }
+        
+        const caregiver = $('#printCaregiver').val();
+        const month = $('#printServiceMonth').val();
+        
+        showPrintPreview(selectedPlans, { type: 'caregiver', caregiver: caregiver, month: month });
+      });
+
+      // 批量打印（按服务对象）- 必须同时打印服务计划和服务协议
+      $('#batchPrintClientBtn').click(function() {
+        const selectedPlans = [];
+        $('.client-plan-checkbox:checked').each(function() {
+          const plan = {
+            clientId: $(this).data('client-id'),
+            clientName: $(this).data('client-name'),
+            idCard: $(this).data('id-card'),
+            month: $(this).data('month'),
+            caregiver: $(this).data('caregiver'),
+            status: $(this).data('status')
+          };
+          selectedPlans.push(plan);
+        });
+        
+        if (selectedPlans.length === 0) {
+          showMessage('提示', '请至少选择一个服务计划', 'warning');
+          return;
+        }
+        
+        // 检查是否有未制定的计划
+        const notCreatedPlans = selectedPlans.filter(p => p.status === 'not_created');
+        if (notCreatedPlans.length > 0) {
+          showMessage('提示', `以下服务计划未制定，不可打印：${notCreatedPlans.map(p => `${p.clientName} (${p.month})`).join('、')}`, 'warning');
+          return;
+        }
+        
+        // 必须同时打印服务计划和服务协议
+        showPrintPreviewWithAgreement(selectedPlans, { type: 'client' });
+      });
+
+      // 显示打印预览（同时包含服务计划和服务协议）
+      function showPrintPreviewWithAgreement(plans, options) {
+        $('#printPreviewInfo').text(`共 ${plans.length} 份（计划+协议）`);
+        
+        // 生成打印内容
+        let printHtml = '';
+        
+        plans.forEach((plan, index) => {
+          // 获取计划详情（模拟）
+          const planDetail = getPlanDetail(plan);
+          
+          // 先打印服务计划
+          printHtml += generatePrintContent(plan, planDetail, index + 1);
+          
+          // 添加分页
+          printHtml += '<div style="page-break-after: always;"></div>';
+          
+          // 再打印服务协议
+          const agreement = {
+            name: plan.clientName,
+            idCard: plan.idCard,
+            caregiver: plan.caregiver || planDetail.caregiver || '待分配',
+            startDate: plan.month ? `${plan.month}-01` : new Date().toISOString().split('T')[0]
+          };
+          printHtml += generateServiceAgreementContent(agreement);
+          
+          // 如果不是最后一份，添加分页
+          if (index < plans.length - 1) {
+            printHtml += '<div style="page-break-after: always;"></div>';
+          }
+        });
+        
+        $('#printPreviewContent').html(printHtml);
+        printPreviewModal.show();
+      }
+
+      // 显示打印预览（仅服务计划，用于按护理员打印）
+      function showPrintPreview(plans, options) {
+        $('#printPreviewInfo').text(`共 ${plans.length} 份计划`);
+        
+        // 生成打印内容
+        let printHtml = '';
+        
+        plans.forEach((plan, index) => {
+          // 获取计划详情（模拟）
+          const planDetail = getPlanDetail(plan);
+          
+          printHtml += generatePrintContent(plan, planDetail, index + 1);
+          
+          // 如果不是最后一份，添加分页
+          if (index < plans.length - 1) {
+            printHtml += '<div style="page-break-after: always;"></div>';
+          }
+        });
+        
+        $('#printPreviewContent').html(printHtml);
+        printPreviewModal.show();
+      }
+
+      // 生成服务协议内容（用于同时打印）
+      function generateServiceAgreementContent(agreement) {
+        const startDate = new Date(agreement.startDate);
+        const endDate = new Date(startDate);
+        endDate.setFullYear(endDate.getFullYear() + 1);
+        const startDateStr = `${startDate.getFullYear()}年${String(startDate.getMonth() + 1).padStart(2, '0')}月${String(startDate.getDate()).padStart(2, '0')}日`;
+        const endDateStr = `${endDate.getFullYear()}年${String(endDate.getMonth() + 1).padStart(2, '0')}月${String(endDate.getDate()).padStart(2, '0')}日`;
+        
+        return `
+          <div class="print-page">
+            <div class="institution-header">
+              <div class="institution-name">XX市居家养老服务中心</div>
+              <div>绍兴市长期护理保险护理服务协议</div>
+              <div style="font-size: 14px; margin-top: 5px;">（适用于重度失能人员）</div>
+            </div>
+            
+            <div class="info-section" style="margin-top: 30px;">
+              <p><strong>甲方（服务机构）：</strong> 绍兴市XX护理服务有限公司</p>
+              <p><strong>乙方（服务对象）：</strong> ${agreement.name}</p>
+              <p><strong>身份证号：</strong> ${agreement.idCard}</p>
+              <p><strong>失能等级：</strong> 一级（重度失能）</p>
+              <p><strong>丙方（护理员）：</strong> ${agreement.caregiver}</p>
+              
+              <p style="margin-top: 30px;"><strong>第一条 服务内容</strong></p>
+              <p>1.1 甲方根据乙方的失能等级和实际需求，按照绍兴市长护险相关规定，为乙方提供以下护理服务：</p>
+              <ul style="list-style-type: decimal; margin-left: 20px;">
+                <li>基础护理服务：整理床单位、协助进食、协助洗漱等</li>
+                <li>生活照料服务：协助如厕、协助更衣、协助移动等</li>
+                <li>康复训练服务：肢体功能训练、认知功能训练等</li>
+              </ul>
+              
+              <p style="margin-top: 20px;"><strong>第二条 服务期限</strong></p>
+              <p>2.1 本协议服务期限自 ${startDateStr} 起至 ${endDateStr} 止。</p>
+              
+              <p style="margin-top: 20px;"><strong>第三条 服务费用</strong></p>
+              <p>3.1 服务费用按照绍兴市长护险相关规定执行，由医保基金支付。</p>
+              
+              <p style="margin-top: 20px;"><strong>第四条 双方权利义务</strong></p>
+              <p>4.1 甲方应按照协议约定提供优质护理服务，确保服务质量。</p>
+              <p>4.2 乙方应配合甲方开展护理服务，如实告知身体状况。</p>
+              
+              <div class="signature-section" style="margin-top: 60px;">
+                <div class="signature-item">
+                  <div>甲方（服务机构）签字盖章：</div>
+                  <div class="signature-line"></div>
+                  <div>日期：________年____月____日</div>
+                </div>
+                <div class="signature-item">
+                  <div>乙方（服务对象/家属）签字：</div>
+                  <div class="signature-line"></div>
+                  <div>日期：________年____月____日</div>
+                </div>
+                <div class="signature-item">
+                  <div>丙方（护理员）签字：</div>
+                  <div class="signature-line"></div>
+                  <div>日期：________年____月____日</div>
+                </div>
+              </div>
+              
+              <div class="stamp-area">
+                <div class="stamp-placeholder">机构盖章处</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 获取计划详情（模拟）
+      function getPlanDetail(plan) {
+        // 模拟计划详情数据
+        return {
+          disabilityLevel: '一级',
+          caregiver: plan.caregiver || $('#printCaregiver').val(),
+          startDate: plan.month ? `${plan.month}-01` : '2024-09-01',
+          weeklyFrequency: 2,
+          totalDuration: 1200,
+          serviceItems: [
+            { name: '整理床单位', duration: 30, times: 4 },
+            { name: '口腔清洁', duration: 15, times: 16 },
+            { name: '协助进食', duration: 45, times: 16 }
+          ],
+          healthDescription: '认知功能：轻度认知障碍，定向力基本正常，能进行简单交流。行动能力：需部分协助翻身、坐起，室内需扶拐行走。'
+        };
+      }
+
+      // 生成打印内容
+      function generatePrintContent(plan, planDetail, index) {
+        const now = new Date();
+        const printTime = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        
+        let serviceItemsHtml = '';
+        planDetail.serviceItems.forEach((item, idx) => {
+          serviceItemsHtml += `
+            <tr>
+              <td>${idx + 1}</td>
+              <td>${item.name}</td>
+              <td>${item.duration}</td>
+              <td>${item.times}</td>
+              <td>${item.duration * item.times}</td>
+            </tr>
+          `;
+        });
+        
+        const totalDuration = planDetail.serviceItems.reduce((sum, item) => sum + item.duration * item.times, 0);
+        
+        return `
+          <div class="print-page">
+            <div class="institution-header">
+              <div class="institution-name">XX市居家养老服务中心</div>
+              <div>长护险护理计划确认单和执行记录</div>
+            </div>
+            
+            <div class="info-section">
+              <table class="info-table">
+                <tr>
+                  <td class="label-cell">服务对象：</td>
+                  <td>${plan.clientName}（${plan.idCard}）</td>
+                  <td class="label-cell">失能等级：</td>
+                  <td>${planDetail.disabilityLevel}</td>
+                </tr>
+                <tr>
+                  <td class="label-cell">负责护理员：</td>
+                  <td>${planDetail.caregiver}</td>
+                  <td class="label-cell">服务开始日期：</td>
+                  <td>${planDetail.startDate}</td>
+                </tr>
+                <tr>
+                  <td class="label-cell">每周服务频次：</td>
+                  <td>${planDetail.weeklyFrequency}次/周</td>
+                  <td class="label-cell">月度总时长：</td>
+                  <td>${totalDuration}分钟（${(totalDuration/60).toFixed(1)}小时）</td>
+                </tr>
+              </table>
+            </div>
+            
+            <div class="health-summary">
+              <div class="summary-title">服务对象情况说明：</div>
+              <div class="summary-content">
+                ${planDetail.healthDescription}
+              </div>
+            </div>
+            
+            <div class="service-table-container">
+              <table class="service-table">
+                <thead>
+                  <tr>
+                    <th>序号</th>
+                    <th>服务项目</th>
+                    <th>单次时长（分钟）</th>
+                    <th>月度次数</th>
+                    <th>月度总时长（分钟）</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${serviceItemsHtml}
+                  <tr>
+                    <td colspan="4" style="text-align: right; font-weight: bold;">合计：</td>
+                    <td style="font-weight: bold;">${totalDuration}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="signature-section">
+              <div class="signature-item">
+                <div>服务对象/家属签字：</div>
+                <div class="signature-line"></div>
+                <div>日期：________年____月____日</div>
+              </div>
+              <div class="signature-item">
+                <div>护理员签字：</div>
+                <div class="signature-line"></div>
+                <div>日期：________年____月____日</div>
+              </div>
+              <div class="signature-item">
+                <div>机构负责人签字：</div>
+                <div class="signature-line"></div>
+                <div>日期：________年____月____日</div>
+              </div>
+            </div>
+            
+            <div class="stamp-area">
+              <div class="stamp-placeholder">机构盖章处</div>
+            </div>
+            
+            <div style="margin-top: 30px; font-size: 12px; color: #666; text-align: right;">
+              打印时间：${printTime} | 打印人：服务主管 | 机构名称：XX市居家养老服务中心
+            </div>
+          </div>
+        `;
+      }
+
+      // 确认打印
+      $('#confirmPrintBtn').click(function() {
+        const paperSize = $('#printPaperSize').val();
+        const orientation = $('#printOrientation').val();
+        
+        // 创建打印窗口
+        const printWindow = window.open('', '_blank');
+        const printContent = $('#printPreviewContent').html();
+        
+        // 根据纸张大小和方向设置样式
+        const pageSize = paperSize === 'A4' ? '210mm 297mm' : paperSize === 'A3' ? '297mm 420mm' : '8.5in 11in';
+        const pageOrientation = orientation === 'landscape' ? 'landscape' : 'portrait';
+        
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>服务计划打印</title>
+              <style>
+                @page {
+                  size: ${pageSize} ${pageOrientation};
+                  margin: 20mm;
+                }
+                body { 
+                  font-family: "宋体", serif; 
+                  padding: 0;
+                  margin: 0;
+                }
+                .print-page {
+                  page-break-after: always;
+                }
+                .print-page:last-child {
+                  page-break-after: auto;
+                }
+                .institution-header { text-align: center; margin-bottom: 20px; }
+                .institution-name { font-size: 22px; font-weight: bold; margin-bottom: 5px; }
+                .info-section { margin-bottom: 20px; }
+                .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                .info-table td { border: 1px solid #000; padding: 6px 10px; font-size: 14px; }
+                .info-table .label-cell { width: 100px; background: #f8f8f8; font-weight: bold; }
+                .health-summary { margin-bottom: 20px; }
+                .summary-title { font-weight: bold; margin-bottom: 8px; }
+                .summary-content { font-size: 14px; line-height: 1.6; }
+                .service-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                .service-table th, .service-table td { border: 1px solid #000; padding: 8px 10px; font-size: 14px; text-align: center; }
+                .service-table th { background: #f8f8f8; font-weight: bold; }
+                .signature-section { display: flex; justify-content: space-between; margin-top: 40px; font-size: 14px; }
+                .signature-item { text-align: center; width: 30%; }
+                .signature-line { border-bottom: 1px solid #000; margin: 10px 0; height: 30px; }
+                .stamp-area { position: relative; height: 80px; margin-top: 30px; }
+                .stamp-placeholder { position: absolute; right: 20px; top: 0; width: 120px; height: 80px; border: 1px dashed #666; text-align: center; line-height: 80px; font-size: 12px; color: #666; }
+              </style>
+            </head>
+            <body>
+              ${printContent}
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        
+        // 等待内容加载后打印
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      });
+      
+      // ========== 服务协议打印功能 ==========
+      
+      // 服务协议复选框选择
+      $(document).on('change', '.agreement-checkbox', function() {
+        updateAgreementSelection();
+      });
+      
+      // 全选服务协议
+      $(document).on('change', '#selectAllAgreements', function() {
+        const checked = $(this).prop('checked');
+        $('.agreement-checkbox').prop('checked', checked);
+        updateAgreementSelection();
+      });
+      
+      // 更新服务协议选择状态
+      function updateAgreementSelection() {
+        const selectedCount = $('.agreement-checkbox:checked').length;
+        $('#selectedAgreementCount').text(`已选择 ${selectedCount} 个协议`);
+        $('#batchPrintAgreementBtn').prop('disabled', selectedCount === 0);
+        $('#batchPrintBothBtn').prop('disabled', selectedCount === 0);
+      }
+      
+      // 单个服务协议打印
+      $(document).on('click', '.print-agreement-btn', function() {
+        const agreementId = $(this).data('id');
+        const agreementName = $(this).data('name');
+        printAgreement([{ id: agreementId, name: agreementName }]);
+      });
+      
+      // 批量打印服务协议
+      $('#batchPrintAgreementBtn').click(function() {
+        const selectedAgreements = [];
+        $('.agreement-checkbox:checked').each(function() {
+          const $row = $(this).closest('tr');
+          selectedAgreements.push({
+            id: $(this).data('id'),
+            name: $row.find('td:eq(1)').text()
+          });
+        });
+        if (selectedAgreements.length > 0) {
+          printAgreement(selectedAgreements);
+        }
+      });
+      
+      // 同时打印协议和计划
+      $('#batchPrintBothBtn').click(function() {
+        const selectedAgreements = [];
+        $('.agreement-checkbox:checked').each(function() {
+          const $row = $(this).closest('tr');
+          selectedAgreements.push({
+            id: $(this).data('id'),
+            name: $row.find('td:eq(1)').text()
+          });
+        });
+        if (selectedAgreements.length > 0) {
+          printAgreement(selectedAgreements, true);
+        }
+      });
+      
+      // 打印服务协议
+      function printAgreement(agreements, includePlan = false) {
+        const printWindow = window.open('', '_blank');
+        let printContent = '';
+        
+        agreements.forEach((agreement, index) => {
+          // 生成服务协议内容（参考评估员的服务协议模板）
+          printContent += `
+            <div class="print-page" style="page-break-after: always;">
+              <div class="institution-header">
+                <div class="institution-name">XX市居家养老服务中心</div>
+                <div>绍兴市长期护理保险护理服务协议</div>
+                <div style="font-size: 14px; margin-top: 5px;">（适用于重度失能人员）</div>
+              </div>
+              
+              <div class="info-section" style="margin-top: 30px;">
+                <p><strong>甲方（服务机构）：</strong> 绍兴市XX护理服务有限公司</p>
+                <p><strong>乙方（服务对象）：</strong> ${agreement.name}</p>
+                <p><strong>身份证号：</strong> 330106********1234</p>
+                <p><strong>联系电话：</strong> 138****1234</p>
+                <p><strong>失能等级：</strong> 一级（重度失能）</p>
+                <p><strong>丙方（护理员）：</strong> 李护理</p>
+                <p><strong>联系电话：</strong> 139****5678</p>
+                
+                <p style="margin-top: 30px;"><strong>第一条 服务内容</strong></p>
+                <p>1.1 甲方根据乙方的失能等级和实际需求，按照绍兴市长护险相关规定，为乙方提供以下护理服务：</p>
+                <ul style="list-style-type: decimal; margin-left: 20px;">
+                  <li>基础护理服务：整理床单位、协助进食、协助洗漱等</li>
+                  <li>生活照料服务：协助如厕、协助更衣、协助移动等</li>
+                  <li>康复训练服务：肢体功能训练、认知功能训练等</li>
+                </ul>
+                
+                <p style="margin-top: 20px;"><strong>第二条 服务期限</strong></p>
+                <p>2.1 本协议服务期限自 2024年09月01日 起至 2025年08月31日 止。</p>
+                
+                <p style="margin-top: 20px;"><strong>第三条 服务费用</strong></p>
+                <p>3.1 服务费用按照绍兴市长护险相关规定执行，由医保基金支付。</p>
+                
+                <p style="margin-top: 20px;"><strong>第四条 双方权利义务</strong></p>
+                <p>4.1 甲方应按照协议约定提供优质护理服务，确保服务质量。</p>
+                <p>4.2 乙方应配合甲方开展护理服务，如实告知身体状况。</p>
+                
+                <div class="signature-section" style="margin-top: 60px;">
+                  <div class="signature-item">
+                    <div>甲方（服务机构）签字盖章：</div>
+                    <div class="signature-line"></div>
+                    <div>日期：________年____月____日</div>
+                  </div>
+                  <div class="signature-item">
+                    <div>乙方（服务对象/家属）签字：</div>
+                    <div class="signature-line"></div>
+                    <div>日期：________年____月____日</div>
+                  </div>
+                  <div class="signature-item">
+                    <div>丙方（护理员）签字：</div>
+                    <div class="signature-line"></div>
+                    <div>日期：________年____月____日</div>
+                  </div>
+                </div>
+                
+                <div class="stamp-area">
+                  <div class="stamp-placeholder">机构盖章处</div>
+                </div>
+              </div>
+            </div>
+          `;
+          
+          // 如果同时打印计划，添加服务计划内容
+          if (includePlan) {
+            printContent += generatePlanPrintContent(agreement);
+          }
+        });
+        
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>服务协议打印</title>
+              <style>
+                @page {
+                  size: A4 portrait;
+                  margin: 20mm;
+                }
+                body { 
+                  font-family: "宋体", serif; 
+                  padding: 0;
+                  margin: 0;
+                }
+                .print-page {
+                  page-break-after: always;
+                }
+                .print-page:last-child {
+                  page-break-after: auto;
+                }
+                .institution-header { text-align: center; margin-bottom: 20px; }
+                .institution-name { font-size: 22px; font-weight: bold; margin-bottom: 5px; }
+                .info-section { margin-bottom: 20px; }
+                .info-section p { margin-bottom: 10px; font-size: 14px; line-height: 1.8; }
+                .info-section ul { margin-bottom: 15px; }
+                .info-section li { margin-bottom: 5px; font-size: 14px; line-height: 1.6; }
+                .signature-section { display: flex; justify-content: space-between; margin-top: 40px; font-size: 14px; }
+                .signature-item { text-align: center; width: 30%; }
+                .signature-line { border-bottom: 1px solid #000; margin: 10px 0; height: 30px; }
+                .stamp-area { position: relative; height: 80px; margin-top: 30px; }
+                .stamp-placeholder { position: absolute; right: 20px; top: 0; width: 120px; height: 80px; border: 1px dashed #666; text-align: center; line-height: 80px; font-size: 12px; color: #666; }
+              </style>
+            </head>
+            <body>
+              ${printContent}
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      }
+      
+      // 生成服务计划打印内容
+      function generatePlanPrintContent(agreement) {
+        // 这里可以调用已有的服务计划打印内容生成函数
+        return `
+          <div class="print-page" style="page-break-after: always;">
+            <div class="institution-header">
+              <div class="institution-name">XX市居家养老服务中心</div>
+              <div>服务计划</div>
+            </div>
+            <div class="info-section">
+              <p><strong>服务对象：</strong> ${agreement.name}</p>
+              <p><strong>服务月份：</strong> 2024年09月</p>
+              <p><strong>负责护理员：</strong> 李护理</p>
+            </div>
+            <!-- 服务计划详细内容 -->
+          </div>
+        `;
+      }
+      
+      // 初始化服务协议选择状态
+      updateAgreementSelection();
+    });
+  </script>
+</body>
+</html>

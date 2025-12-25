@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服务审批 - 服务管理</title>
+  <!-- 引入外部资源 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <style>
+    /* 继承全局样式 */
+    body { font-family: "微软雅黑", "思源黑体", sans-serif; background-color: #f5f7fa; color: #333; }
+    .btn-primary { background-color: #1890FF; border-color: #1890FF; }
+    .btn-primary:hover { background-color: #096DD9; border-color: #096DD9; }
+    .btn-outline-secondary { border-color: #ddd; color: #666; }
+    .btn-outline-secondary:hover { background-color: #f5f5f5; border-color: #ccc; }
+    .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .card-header { background: #fff; border-bottom: 1px solid #f0f0f0; border-radius: 12px 12px 0 0; padding: 15px 20px; font-weight: 600; font-size: 15px; }
+    .card-body { padding: 20px; }
+    /* 布局样式 */
+    .app-container { display: flex; min-height: 100vh; }
+    /* 侧边导航 */
+    .sidebar { width: 220px; background: #fff; box-shadow: 1px 0 2px rgba(0,0,0,0.05); padding: 20px 0; flex-shrink: 0; }
+    .sidebar-logo { text-align: center; padding: 0 20px 20px; border-bottom: 1px solid #f0f0f0; margin-bottom: 20px; }
+    .sidebar-logo img { height: 40px; margin-bottom: 8px; }
+    .sidebar-logo h3 { font-size: 16px; color: #1890FF; font-weight: 600; margin: 0; }
+    .nav-menu { list-style: none; padding: 0; margin: 0; }
+    .nav-item { margin-bottom: 4px; }
+    .nav-link { display: flex; align-items: center; padding: 12px 20px; color: #666; text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
+    .nav-link:hover, .nav-link.active { color: #1890FF; background-color: #f0f7ff; border-left: 3px solid #1890FF; }
+    .nav-link i { font-size: 18px; margin-right: 12px; width: 20px; text-align: center; }
+    .nav-group-title { padding: 15px 20px 5px; font-size: 12px; color: #999; font-weight: 500; }
+    /* 主内容区 */
+    .main-content { flex: 1; padding: 20px; overflow-y: auto; }
+    /* 顶部导航 */
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .page-title { font-size: 20px; font-weight: 600; color: #333; margin: 0; }
+    .user-info { display: flex; align-items: center; }
+    .notification { position: relative; margin-right: 20px; cursor: pointer; }
+    .notification i { font-size: 20px; color: #666; }
+    .notification-badge { position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; background: #FF4D4F; color: #fff; border-radius: 50%; font-size: 12px; text-align: center; line-height: 18px; }
+    .badge-danger { background-color: #FF4D4F; }
+    .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #1890FF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; margin-right: 10px; }
+    .user-name { font-size: 14px; font-weight: 500; }
+
+    /* 审批页面专属样式 */
+    .approval-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .approval-title { font-size: 20px; font-weight: 600; color: #333; margin: 0; }
+    
+    /* 筛选区样式 */
+    .filter-section { background: #fff; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; }
+    .filter-row { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+    .filter-group { flex: 1; min-width: 200px; }
+    .filter-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    .filter-group .form-control, .filter-group .form-select { width: 100%; }
+    .filter-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+    
+    /* 数据展示区样式 */
+    .data-section { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .no-data { text-align: center; padding: 50px 0; color: #999; }
+    .no-data i { font-size: 48px; margin-bottom: 15px; display: block; }
+    
+    /* 表格样式 */
+    .approval-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .approval-table th, .approval-table td { border: 1px solid #f0f0f0; padding: 10px 12px; text-align: center; font-size: 13px; }
+    .approval-table th { background-color: #f8f9fa; font-weight: 500; }
+    .approval-table tbody tr:hover { background-color: #f9f9f9; }
+    .approval-table .status-pending { color: #FAAD14; font-weight: 500; }
+    .approval-table .status-approved { color: #52C41A; font-weight: 500; }
+    .approval-table .status-rejected { color: #FF4D4F; font-weight: 500; }
+    .approval-table .action-link { color: #1890FF; cursor: pointer; text-decoration: underline; }
+    
+    /* 模态框样式 */
+    .approval-modal .modal-dialog { max-width: 800px; }
+    .modal-header { background-color: #f8f9fa; border-bottom: 1px solid #f0f0f0; }
+    .approval-form .form-group { margin-bottom: 15px; }
+    .approval-form label { font-weight: 500; margin-bottom: 5px; display: block; }
+    .approval-form .form-control { margin-bottom: 5px; }
+    .form-section { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #f0f0f0; }
+    .form-section:last-child { border-bottom: none; margin-bottom: 10px; padding-bottom: 0; }
+    .reject-reason-group { display: none; margin-top: 15px; }
+    
+    /* 标签页样式调整 */
+    .nav-tabs .nav-link { border: 1px solid transparent; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; color: #666; padding: 10px 20px; position: relative; }
+    .nav-tabs .nav-link.active { color: #1890FF; background-color: #fff; border-color: #dee2e6 #dee2e6 #fff; border-top: 3px solid #1890FF; font-weight: 500; }
+    .tab-content { margin-top: 20px; }
+    .badge-count { position: absolute; top: 5px; right: 15px; background-color: #FF4D4F; color: white; border-radius: 10px; padding: 0 5px; font-size: 12px; height: 16px; line-height: 16px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 侧边导航 -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://via.placeholder.com/80x40?text=居家长护" alt="系统Logo">
+        <h3>服务主管工作平台</h3>
+      </div>
+      
+      <!-- 导航分组：统计分析 -->
+      <div class="nav-group-title">看板管理</div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="数据驾驶舱.html" class="nav-link">
+            <i class="fa fa-dashboard"></i>
+            <span>数据驾驶舱</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="index.html" class="nav-link active">
+            <i class="fa fa-dashboard"></i>
+            <span>服务对象看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="总体统计.html" class="nav-link">
+            <i class="fa fa-bar-chart"></i>
+            <span>总体统计看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="流程管理.html" class="nav-link">
+            <i class="fa fa-sitemap"></i>
+            <span>流程管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="线上回访.html" class="nav-link">
+            <i class="fa fa-phone"></i>
+            <span>线上线下回访执行</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="服务对象分配.html" class="nav-link">
+            <i class="fa fa-users"></i>
+            <span>服务对象分配</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="新增服务对象管理.html" class="nav-link">
+            <i class="fa fa-user-plus"></i>
+            <span>新增服务对象配置</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="首月服务计划管理.html" class="nav-link">
+            <i class="fa fa-calendar"></i>
+            <span>服务计划管理或打印</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="平台工单差异查询.html" class="nav-link">
+            <i class="fa fa-search"></i>
+            <span>医保工单差异查询</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="工单管理.html" class="nav-link">
+            <i class="fa fa-tasks"></i>
+            <span>工单管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="重点服务对象管理.html" class="nav-link">
+            <i class="fa fa-star"></i>
+            <span>重点服务对象管理</span>
+          </a>
+        </li>
+      </ul>
+      
+      <!-- 导航分组：系统设置 -->
+      <div class="nav-group-title">系统设置</div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#" class="nav-link" id="caregiverSettingsLink">
+            <i class="fa fa-cog"></i>
+            <span>护理员设置</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <!-- 顶部导航：标题 + 用户信息 -->
+      <div class="top-nav">
+        <h1 class="page-title">服务审批 - 服务管理</h1>
+        <div class="user-info">
+          <div class="notification">
+            <i class="fa fa-bell-o"></i>
+            <span class="notification-badge">2</span>
+          </div>
+          <div class="user-avatar">主</div>
+          <div class="user-name">服务主管</div>
+        </div>
+      </div>
+
+      <!-- 审批模块标签页 -->
+      <ul class="nav nav-tabs" id="approvalTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="pending-approval-tab" data-bs-toggle="tab" data-bs-target="#pending-approval" type="button" role="tab" aria-controls="pending-approval" aria-selected="true">
+            待审批
+            <span class="badge-count">5</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab" aria-controls="approved" aria-selected="false">已审批</button>
+        </li>
+      </ul>
+
+      <!-- 审批内容区 -->
+      <div class="tab-content" id="approvalTabContent">
+        <!-- 待审批列表 -->
+        <div class="tab-pane fade show active" id="pending-approval" role="tabpanel" aria-labelledby="pending-approval-tab">
+          <!-- 筛选区 -->
+          <div class="filter-section">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label for="approvalType">申请类型</label>
+                <select id="approvalType" class="form-select">
+                  <option value="all">全部类型</option>
+                  <option value="suspension">暂停申请</option>
+                  <option value="death">死亡申请</option>
+                  <option value="recovery">恢复申请</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="approvalDateRange">申请日期范围</label>
+                <div class="input-group">
+                  <input type="date" id="approvalStartDate" class="form-control" value="2025-01-01">
+                  <span class="input-group-text">至</span>
+                  <input type="date" id="approvalEndDate" class="form-control" value="2025-12-31">
+                </div>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button id="approvalSearchBtn" class="btn btn-primary">
+                <i class="fa fa-search"></i> 查询
+              </button>
+              <button id="approvalResetBtn" class="btn btn-outline-secondary">
+                <i class="fa fa-refresh"></i> 重置
+              </button>
+            </div>
+          </div>
+
+          <!-- 数据展示区 -->
+          <div class="data-section">
+            <div id="pendingApprovalTable">
+              <table class="approval-table">
+                <thead>
+                  <tr>
+                    <th>申请人</th>
+                    <th>服务对象</th>
+                    <th>申请类型</th>
+                    <th>申请日期</th>
+                    <th>申请状态</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>李护理</td>
+                    <td>陈一</td>
+                    <td>暂停申请</td>
+                    <td>2025-10-15</td>
+                    <td><span class="status-pending">待审批</span></td>
+                    <td><span class="action-link" data-id="1" data-type="suspension">查看详情</span></td>
+                  </tr>
+                  <tr>
+                    <td>王护理</td>
+                    <td>吴二</td>
+                    <td>死亡申请</td>
+                    <td>2025-10-14</td>
+                    <td><span class="status-pending">待审批</span></td>
+                    <td><span class="action-link" data-id="2" data-type="death">查看详情</span></td>
+                  </tr>
+                  <tr>
+                    <td>张护理</td>
+                    <td>郑三</td>
+                    <td>恢复申请</td>
+                    <td>2025-10-13</td>
+                    <td><span class="status-pending">待审批</span></td>
+                    <td><span class="action-link" data-id="3" data-type="recovery">查看详情</span></td>
+                  </tr>
+                  <tr>
+                    <td>刘护理</td>
+                    <td>冯四</td>
+                    <td>暂停申请</td>
+                    <td>2025-10-12</td>
+                    <td><span class="status-pending">待审批</span></td>
+                    <td><span class="action-link" data-id="4" data-type="suspension">查看详情</span></td>
+                  </tr>
+                  <tr>
+                    <td>赵护理</td>
+                    <td>钱五</td>
+                    <td>暂停申请</td>
+                    <td>2025-10-11</td>
+                    <td><span class="status-pending">待审批</span></td>
+                    <td><span class="action-link" data-id="5" data-type="suspension">查看详情</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div id="pendingNoData" class="no-data" style="display: none;">
+              <i class="fa fa-inbox"></i>
+              <h5>暂无待审批申请</h5>
+              <p>所有申请均已处理</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 已审批列表 -->
+        <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
+          <!-- 筛选区 -->
+          <div class="filter-section">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label for="approvedType">申请类型</label>
+                <select id="approvedType" class="form-select">
+                  <option value="all">全部类型</option>
+                  <option value="suspension">暂停申请</option>
+                  <option value="death">死亡申请</option>
+                  <option value="recovery">恢复申请</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="approvedStatus">审批状态</label>
+                <select id="approvedStatus" class="form-select">
+                  <option value="all">全部状态</option>
+                  <option value="approved">已通过</option>
+                  <option value="rejected">已驳回</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="approvedDateRange">申请日期范围</label>
+                <div class="input-group">
+                  <input type="date" id="approvedStartDate" class="form-control" value="2025-01-01">
+                  <span class="input-group-text">至</span>
+                  <input type="date" id="approvedEndDate" class="form-control" value="2025-12-31">
+                </div>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button id="approvedSearchBtn" class="btn btn-primary">
+                <i class="fa fa-search"></i> 查询
+              </button>
+              <button id="approvedResetBtn" class="btn btn-outline-secondary">
+                <i class="fa fa-refresh"></i> 重置
+              </button>
+            </div>
+          </div>
+
+          <!-- 数据展示区 -->
+          <div class="data-section">
+            <div id="approvedTable">
+              <table class="approval-table">
+                <thead>
+                  <tr>
+                    <th>申请人</th>
+                    <th>服务对象</th>
+                    <th>申请类型</th>
+                    <th>申请日期</th>
+                    <th>审批状态</th>
+                    <th>审批人</th>
+                    <th>审批时间</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>孙护理</td>
+                    <td>周六</td>
+                    <td>恢复申请</td>
+                    <td>2025-10-10</td>
+                    <td><span class="status-approved">已通过</span></td>
+                    <td>服务主管</td>
+                    <td>2025-10-10 14:30</td>
+                    <td><span class="action-link" data-id="6" data-type="recovery">查看详情</span></td>
+                  </tr>
+                  <tr>
+                    <td>李护理</td>
+                    <td>吴七</td>
+                    <td>暂停申请</td>
+                    <td>2025-10-09</td>
+                    <td><span class="status-rejected">已驳回</span></td>
+                    <td>服务主管</td>
+                    <td>2025-10-09 10:15</td>
+                    <td><span class="action-link" data-id="7" data-type="suspension">查看详情</span></td>
+                  </tr>
+                  <tr>
+                    <td>王护理</td>
+                    <td>郑八</td>
+                    <td>死亡申请</td>
+                    <td>2025-10-08</td>
+                    <td><span class="status-approved">已通过</span></td>
+                    <td>服务主管</td>
+                    <td>2025-10-08 16:45</td>
+                    <td><span class="action-link" data-id="8" data-type="death">查看详情</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div id="approvedNoData" class="no-data" style="display: none;">
+              <i class="fa fa-check-circle"></i>
+              <h5>暂无已审批申请</h5>
+              <p>请调整筛选条件后重试</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 审批详情模态框 -->
+  <div class="modal fade approval-modal" id="approvalDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="approvalModalTitle">暂停申请 - 陈一</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form class="approval-form" id="approvalForm">
+            <!-- 基本信息区 -->
+            <div class="form-section">
+              <h6 class="form-section-title">基本信息</h6>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>申请人</label>
+                    <input type="text" class="form-control" id="applicantName" value="李护理" readonly>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>申请日期</label>
+                    <input type="text" class="form-control" id="applicationDate" value="2025-10-15" readonly>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>服务对象姓名</label>
+                    <input type="text" class="form-control" id="serviceObjectName" value="陈一" readonly>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>服务对象身份证号</label>
+                    <input type="text" class="form-control" id="serviceObjectId" value="330602********1234" readonly>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 暂停申请信息区 -->
+            <div class="form-section" id="suspensionSection">
+              <h6 class="form-section-title">暂停申请信息</h6>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>暂停开始日期</label>
+                    <input type="date" class="form-control" id="suspensionStartDate" value="2025-10-16">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>暂停类型</label>
+                    <select class="form-select" id="suspensionType">
+                      <option value="temporary">暂时中止</option>
+                      <option value="permanent">永久放弃</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-12">
+                  <div class="form-group">
+                    <label>暂停原因</label>
+                    <textarea class="form-control" id="suspensionReason" rows="3" readonly>服务对象因突发疾病住院治疗，无法继续接受居家护理服务，申请暂时中止服务。预计住院时间为1个月，待康复出院后再申请恢复服务。</textarea>
+                  </div>
+                </div>
+                <div class="col-md-12">
+                  <div class="form-group">
+                    <label>护理员备注</label>
+                    <textarea class="form-control" id="caregiverRemark" rows="2" readonly>已与家属电话确认，情况属实。家属表示会在患者出院后及时联系我们。</textarea>
+                  </div>
+                </div>
+                <div class="col-md-12">
+                  <div class="form-group">
+                    <label>家属联系确认记录</label>
+                    <textarea class="form-control" id="familyConfirmation" rows="2" readonly>已联系家属张三（电话：138****1234），家属确认知晓并同意暂停服务。</textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 死亡申请信息区（默认隐藏） -->
+            <div class="form-section" id="deathSection" style="display: none;">
+              <h6 class="form-section-title">死亡申请信息</h6>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>死亡日期</label>
+                    <input type="date" class="form-control" id="deathDate" value="2025-10-14">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>服务对象当前状态</label>
+                    <select class="form-select" id="serviceObjectStatus">
+                      <option value="normal">正常</option>
+                      <option value="suspended">暂停</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-12">
+                  <div class="form-group">
+                    <label>护理员备注</label>
+                    <textarea class="form-control" id="deathCaregiverRemark" rows="3" readonly>服务对象于2025年10月14日因疾病去世，已联系家属确认情况。家属表示会尽快办理相关手续。</textarea>
+                  </div>
+                </div>
+                <div class="col-md-12">
+                  <div class="form-group">
+                    <label>家属确认状态</label>
+                    <select class="form-select" id="deathFamilyConfirmation">
+                      <option value="confirmed">已确认</option>
+                      <option value="pending">待确认</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 恢复申请信息区（默认隐藏） -->
+            <div class="form-section" id="recoverySection" style="display: none;">
+              <h6 class="form-section-title">恢复申请信息</h6>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>恢复服务日期</label>
+                    <input type="date" class="form-control" id="recoveryStartDate" value="2025-10-16">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>原暂停原因</label>
+                    <input type="text" class="form-control" id="originalSuspensionReason" value="住院治疗" readonly>
+                  </div>
+                </div>
+                <div class="col-md-12">
+                  <div class="form-group">
+                    <label>恢复原因</label>
+                    <textarea class="form-control" id="recoveryReason" rows="3" readonly>服务对象已康复出院，身体状况良好，具备接受居家护理服务的条件。家属申请恢复服务。</textarea>
+                  </div>
+                </div>
+                <div class="col-md-12">
+                  <div class="form-group">
+                    <label>护理员备注</label>
+                    <textarea class="form-control" id="recoveryCaregiverRemark" rows="2" readonly>已上门探访，确认服务对象身体状况符合服务要求，建议恢复服务。</textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 驳回原因输入区（默认隐藏） -->
+            <div class="form-group reject-reason-group" id="rejectReasonGroup">
+              <label for="rejectReason" class="required">驳回原因</label>
+              <textarea class="form-control" id="rejectReason" rows="3" placeholder="请输入驳回原因（必填）"></textarea>
+              <div class="form-text text-danger" id="rejectReasonError" style="display: none;">请输入驳回原因</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+          <button type="button" class="btn btn-danger" id="rejectBtn">驳回</button>
+          <button type="button" class="btn btn-primary" id="approveBtn">通过</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 操作提示模态框 -->
+  <div class="modal fade" id="promptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-body text-center py-4">
+          <i class="fa fa-info-circle text-primary" style="font-size: 36px; margin-bottom: 15px;"></i>
+          <h5 class="modal-title" id="promptTitle">操作提示</h5>
+          <p class="text-muted" id="promptMsg">操作成功！</p>
+          <button type="button" class="btn btn-primary mt-3" data-bs-dismiss="modal">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    $(function() {
+      // 初始化模态框
+      const approvalDetailModal = new bootstrap.Modal('#approvalDetailModal');
+      const promptModal = new bootstrap.Modal('#promptModal');
+      
+      // 当前审批ID和类型
+      let currentApprovalId = '';
+      let currentApprovalType = '';
+      
+      // 查看详情链接点击事件
+      $('.action-link').click(function() {
+        currentApprovalId = $(this).data('id');
+        currentApprovalType = $(this).data('type');
+        
+        // 根据申请类型切换显示不同的表单区域
+        switch(currentApprovalType) {
+          case 'suspension':
+            $('#suspensionSection').show();
+            $('#deathSection').hide();
+            $('#recoverySection').hide();
+            $('#approvalModalTitle').text('暂停申请 - 陈一');
+            break;
+          case 'death':
+            $('#suspensionSection').hide();
+            $('#deathSection').show();
+            $('#recoverySection').hide();
+            $('#approvalModalTitle').text('死亡申请 - 吴二');
+            break;
+          case 'recovery':
+            $('#suspensionSection').hide();
+            $('#deathSection').hide();
+            $('#recoverySection').show();
+            $('#approvalModalTitle').text('恢复申请 - 郑三');
+            break;
+        }
+        
+        // 重置驳回原因输入框和错误提示
+        $('#rejectReason').val('');
+        $('#rejectReasonError').hide();
+        $('#rejectReasonGroup').hide();
+        
+        // 显示模态框
+        approvalDetailModal.show();
+      });
+      
+      // 驳回按钮点击事件
+      $('#rejectBtn').click(function() {
+        // 显示驳回原因输入框
+        $('#rejectReasonGroup').show();
+        // 聚焦到输入框
+        $('#rejectReason').focus();
+      });
+      
+      // 通过按钮点击事件
+      $('#approveBtn').click(function() {
+        // 模拟审批通过的API请求
+        setTimeout(() => {
+          // 根据申请类型显示不同的提示信息
+          let promptMessage = '';
+          if (currentApprovalType === 'suspension' || currentApprovalType === 'recovery') {
+            promptMessage = '审批已通过，请联系医保接口人执行对应操作';
+          } else if (currentApprovalType === 'death') {
+            promptMessage = '审批已通过，需在医保平台录入死亡名单并解绑。<a href="#" class="text-primary">医保操作指引</a>';
+          }
+          
+          // 更新提示信息并显示
+          $('#promptMsg').html(promptMessage);
+          promptModal.show();
+          
+          // 关闭详情模态框
+          approvalDetailModal.hide();
+          
+          // 模拟刷新列表数据（实际项目中应重新请求数据）
+          setTimeout(() => {
+            // 从待审批列表中移除当前项
+            $(`.action-link[data-id="${currentApprovalId}"]`).closest('tr').remove();
+            
+            // 检查待审批列表是否为空
+            if ($('#pendingApprovalTable tbody tr').length === 0) {
+              $('#pendingApprovalTable').hide();
+              $('#pendingNoData').show();
+            }
+            
+            // 更新待审批数量（减少1）
+            const pendingCount = parseInt($('.badge-count').text());
+            if (pendingCount > 0) {
+              $('.badge-count').text(pendingCount - 1);
+            }
+          }, 500);
+        }, 500);
+      });
+      
+      // 模态框确认按钮点击事件（处理驳回操作）
+      $('#promptModal .btn-primary').click(function() {
+        // 如果是驳回操作，需要处理驳回原因
+        if ($('#rejectReasonGroup').is(':visible')) {
+          const rejectReason = $('#rejectReason').val().trim();
+          if (!rejectReason) {
+            $('#rejectReasonError').show();
+            return;
+          }
+          
+          // 模拟驳回的API请求
+          setTimeout(() => {
+            $('#promptMsg').text('驳回成功，已同步给护理员');
+            promptModal.show();
+            
+            // 关闭详情模态框
+            approvalDetailModal.hide();
+            
+            // 模拟刷新列表数据
+            setTimeout(() => {
+              // 从待审批列表中移除当前项
+              $(`.action-link[data-id="${currentApprovalId}"]`).closest('tr').remove();
+              
+              // 检查待审批列表是否为空
+              if ($('#pendingApprovalTable tbody tr').length === 0) {
+                $('#pendingApprovalTable').hide();
+                $('#pendingNoData').show();
+              }
+              
+              // 更新待审批数量（减少1）
+              const pendingCount = parseInt($('.badge-count').text());
+              if (pendingCount > 0) {
+                $('.badge-count').text(pendingCount - 1);
+              }
+            }, 500);
+          }, 500);
+        }
+      });
+      
+      // 筛选查询按钮事件
+      $('#approvalSearchBtn, #approvedSearchBtn').click(function() {
+        // 显示加载中状态（实际项目中应显示加载动画）
+        const tabId = $(this).closest('.tab-pane').attr('id');
+        $(`#${tabId} .data-section`).addClass('loading');
+        
+        // 模拟查询延迟
+        setTimeout(() => {
+          // 随机决定是否有数据
+          const hasData = Math.random() > 0.2;
+          
+          if (hasData) {
+            $(`#${tabId}Table`).show();
+            $(`#${tabId}NoData`).hide();
+          } else {
+            $(`#${tabId}Table`).hide();
+            $(`#${tabId}NoData`).show();
+          }
+          
+          // 移除加载状态
+          $(`#${tabId} .data-section`).removeClass('loading');
+        }, 800);
+      });
+      
+      // 重置按钮事件
+      $('#approvalResetBtn, #approvedResetBtn').click(function() {
+        // 重置对应筛选区的表单元素
+        const filterSection = $(this).closest('.filter-section');
+        filterSection.find('input[type="date"]').val('2025-01-01');
+        filterSection.find('.form-select').val('all');
+      });
+      
+      // 驳回原因输入框验证
+      $('#rejectReason').blur(function() {
+        const rejectReason = $(this).val().trim();
+        if (!rejectReason) {
+          $('#rejectReasonError').show();
+        } else {
+          $('#rejectReasonError').hide();
+        }
+      });
+      
+      // 标签页切换事件
+      $('#approvalTabs button').click(function() {
+        // 更新页面标题
+        const tabName = $(this).text().split(' ')[0];
+        $('.page-title').text(`${tabName} - 服务审批`);
+      });
+    });
+  </script>
+</body>
+</html>

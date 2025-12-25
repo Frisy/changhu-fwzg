@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分管档案查询 - 档案管理</title>
+  <!-- 引入外部资源 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <style>
+    /* 继承全局样式 */
+    body { font-family: "微软雅黑", "思源黑体", sans-serif; background-color: #f5f7fa; color: #333; }
+    .btn-primary { background-color: #1890FF; border-color: #1890FF; }
+    .btn-primary:hover { background-color: #096DD9; border-color: #096DD9; }
+    .btn-outline-secondary { border-color: #ddd; color: #666; }
+    .btn-outline-secondary:hover { background-color: #f5f5f5; border-color: #ccc; }
+    .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .card-header { background: #fff; border-bottom: 1px solid #f0f0f0; border-radius: 12px 12px 0 0; padding: 15px 20px; font-weight: 600; font-size: 15px; }
+    .card-body { padding: 20px; }
+    /* 布局样式 */
+    .app-container { display: flex; min-height: 100vh; }
+    /* 侧边导航 */
+    .sidebar { width: 220px; background: #fff; box-shadow: 1px 0 2px rgba(0,0,0,0.05); padding: 20px 0; flex-shrink: 0; }
+    .sidebar-logo { text-align: center; padding: 0 20px 20px; border-bottom: 1px solid #f0f0f0; margin-bottom: 20px; }
+    .sidebar-logo img { height: 40px; margin-bottom: 8px; }
+    .sidebar-logo h3 { font-size: 16px; color: #1890FF; font-weight: 600; margin: 0; }
+    .nav-menu { list-style: none; padding: 0; margin: 0; }
+    .nav-item { margin-bottom: 4px; }
+    .nav-link { display: flex; align-items: center; padding: 12px 20px; color: #666; text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
+    .nav-link:hover, .nav-link.active { color: #1890FF; background-color: #f0f7ff; border-left: 3px solid #1890FF; }
+    .nav-link i { font-size: 18px; margin-right: 12px; width: 20px; text-align: center; }
+    .nav-group-title { padding: 15px 20px 5px; font-size: 12px; color: #999; font-weight: 500; }
+    /* 主内容区 */
+    .main-content { flex: 1; padding: 20px; overflow-y: auto; }
+    /* 顶部导航 */
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .page-title { font-size: 20px; font-weight: 600; color: #333; margin: 0; }
+    .user-info { display: flex; align-items: center; }
+    .notification { position: relative; margin-right: 20px; cursor: pointer; }
+    .notification i { font-size: 20px; color: #666; }
+    .notification-badge { position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; background: #FF4D4F; color: #fff; border-radius: 50%; font-size: 12px; text-align: center; line-height: 18px; }
+    .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #1890FF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; margin-right: 10px; }
+    .user-name { font-size: 14px; font-weight: 500; }
+
+    /* 档案查询页面专属样式 */
+    .archive-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .archive-tabs .nav-link { padding: 10px 20px; }
+    .search-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .search-input { flex: 1; min-width: 200px; }
+    .advanced-filter-btn { white-space: nowrap; }
+    /* 筛选区样式 */
+    .filter-section { background: #fff; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: none; }
+    .filter-row { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+    .filter-group { flex: 1; min-width: 200px; }
+    .filter-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    .filter-group .form-control, .filter-group .form-select { width: 100%; }
+    .filter-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+    /* 档案列表样式 */
+    .archive-list { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .archive-table { width: 100%; border-collapse: collapse; }
+    .archive-table th, .archive-table td { border: 1px solid #f0f0f0; padding: 12px 15px; text-align: left; font-size: 13px; }
+    .archive-table th { background-color: #f8f9fa; font-weight: 500; }
+    .archive-table tbody tr:hover { background-color: #f9f9f9; }
+    .status-warning { color: #FAAD14; font-weight: 500; }
+    .status-normal { color: #52C41A; font-weight: 500; }
+    .action-btn { padding: 4px 8px; font-size: 12px; margin-right: 5px; }
+    /* 档案详情弹窗样式 */
+    .archive-modal .modal-dialog { max-width: 900px; max-height: 90vh; overflow-y: auto; }
+    .modal-header .btn-close { margin-left: auto; }
+    .archive-detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .download-all-btn { white-space: nowrap; }
+    .archive-detail-tabs .nav-link { padding: 10px 15px; }
+    .archive-detail-content { padding: 15px; border: 1px solid #f0f0f0; border-radius: 8px; margin-top: 15px; }
+    /* 文件列表样式 */
+    .file-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+    .file-card { border: 1px solid #f0f0f0; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s; }
+    .file-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .file-preview { height: 120px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; position: relative; }
+    .file-preview img { max-width: 90%; max-height: 90%; object-fit: contain; }
+    .file-type { position: absolute; top: 5px; right: 5px; background: #1890FF; color: #fff; font-size: 10px; padding: 2px 5px; border-radius: 3px; }
+    .file-info { padding: 10px; }
+    .file-name { font-size: 13px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-size { font-size: 11px; color: #999; margin-bottom: 8px; }
+    .file-actions { display: flex; gap: 5px; }
+    .file-action-btn { font-size: 11px; padding: 2px 5px; }
+    /* 服务统计样式 */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+    .stat-card { background: #f8f9fa; border-radius: 8px; padding: 15px; text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 600; color: #1890FF; margin: 10px 0; }
+    .stat-label { font-size: 13px; color: #666; }
+    /* 基础信息样式 */
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 15px; }
+    .info-item { display: flex; flex-direction: column; }
+    .info-label { font-size: 13px; color: #999; margin-bottom: 5px; }
+    .info-value { font-size: 14px; font-weight: 500; }
+    /* 预览模态框样式 */
+    .preview-modal .modal-dialog { max-width: 90%; max-height: 90vh; }
+    .preview-content { display: flex; justify-content: center; align-items: center; min-height: 50vh; background: #000; }
+    .preview-img { max-width: 95%; max-height: 80vh; object-fit: contain; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 侧边导航 -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://via.placeholder.com/80x40?text=居家长护" alt="系统Logo">
+        <h3>服务主管工作平台</h3>
+      </div>
+      
+      <!-- 导航分组：统计分析 -->
+      <div class="nav-group-title">看板管理</div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="数据驾驶舱.html" class="nav-link">
+            <i class="fa fa-dashboard"></i>
+            <span>数据驾驶舱</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="index.html" class="nav-link ">
+            <i class="fa fa-dashboard"></i>
+            <span>服务对象看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="总体统计.html" class="nav-link">
+            <i class="fa fa-bar-chart"></i>
+            <span>总体统计看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="流程管理.html" class="nav-link">
+            <i class="fa fa-sitemap"></i>
+            <span>流程管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="线上回访.html" class="nav-link">
+            <i class="fa fa-phone"></i>
+            <span>线上线下回访执行</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="服务对象分配.html" class="nav-link">
+            <i class="fa fa-users"></i>
+            <span>服务对象分配</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="新增服务对象管理.html" class="nav-link">
+            <i class="fa fa-user-plus"></i>
+            <span>新增服务对象配置</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="首月服务计划管理.html" class="nav-link">
+            <i class="fa fa-calendar"></i>
+            <span>服务计划管理或打印</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="平台工单差异查询.html" class="nav-link">
+            <i class="fa fa-search"></i>
+            <span>医保工单差异查询</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <!-- 顶部导航：标题 + 用户信息 -->
+      <div class="top-nav">
+        <h1 class="page-title">分管档案查询 - 档案管理</h1>
+        <div class="user-info">
+          <div class="notification">
+            <i class="fa fa-bell-o"></i>
+            <span class="notification-badge">2</span>
+          </div>
+          <div class="user-avatar">主</div>
+          <div class="user-name">服务主管</div>
+        </div>
+      </div>
+
+      <!-- 档案查询标签页 -->
+      <ul class="nav nav-tabs archive-tabs" id="archiveTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="service-object-tab" data-bs-toggle="tab" data-bs-target="#service-object" type="button" role="tab" aria-controls="service-object" aria-selected="true">服务对象档案</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="caregiver-tab" data-bs-toggle="tab" data-bs-target="#caregiver" type="button" role="tab" aria-controls="caregiver" aria-selected="false">护理员档案</button>
+        </li>
+      </ul>
+
+      <!-- 档案查询内容区 -->
+      <div class="tab-content" id="archiveTabContent">
+        <!-- 服务对象档案 -->
+        <div class="tab-pane fade show active" id="service-object" role="tabpanel" aria-labelledby="service-object-tab">
+          <!-- 搜索和筛选区 -->
+          <div class="archive-header">
+            <div class="search-bar">
+              <div class="search-input">
+                <input type="text" class="form-control" id="serviceObjectSearch" placeholder="输入姓名/身份证号模糊搜索">
+              </div>
+              <button class="btn btn-primary" id="serviceObjectSearchBtn">
+                <i class="fa fa-search"></i> 查询
+              </button>
+              <button class="btn btn-outline-secondary advanced-filter-btn" id="serviceObjectFilterBtn">
+                <i class="fa fa-filter"></i> 高级筛选
+              </button>
+            </div>
+          </div>
+
+          <!-- 高级筛选区（默认隐藏） -->
+          <div class="filter-section" id="serviceObjectFilterSection">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label for="serviceObjectRegion">行政区域（仅负责区域）</label>
+                <select id="serviceObjectRegion" class="form-select">
+                  <option value="all">全部区域</option>
+                  <option value="region1">杭州市西湖区</option>
+                  <option value="region2">杭州市拱墅区</option>
+                  <option value="region3">杭州市滨江区</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="serviceObjectStatus">服务状态</label>
+                <select id="serviceObjectStatus" class="form-select">
+                  <option value="all">全部状态</option>
+                  <option value="normal">正常</option>
+                  <option value="suspended">暂停</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="serviceObjectSignDate">签约时间范围</label>
+                <div class="input-group">
+                  <input type="date" id="serviceObjectSignStartDate" class="form-control" value="2024-01-01">
+                  <span class="input-group-text">至</span>
+                  <input type="date" id="serviceObjectSignEndDate" class="form-control" value="2025-12-31">
+                </div>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button class="btn btn-primary" id="serviceObjectApplyFilterBtn">应用筛选</button>
+              <button class="btn btn-outline-secondary" id="serviceObjectResetFilterBtn">重置</button>
+            </div>
+          </div>
+
+          <!-- 数据列表 -->
+          <div class="archive-list">
+            <p class="text-muted mb-3">显示您负责的服务对象数据（可查看详细信息和档案）</p>
+            <table class="archive-table">
+              <thead>
+                <tr>
+                  <th>姓名</th>
+                  <th>身份证号</th>
+                  <th>地址</th>
+                  <th>失能等级</th>
+                  <th>服务状态</th>
+                  <th>签约时间</th>
+                  <th>当前护理员</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="serviceObjectListBody">
+                <!-- 数据将通过JavaScript动态生成 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 护理员档案 -->
+        <div class="tab-pane fade" id="caregiver" role="tabpanel" aria-labelledby="caregiver-tab">
+          <!-- 搜索和筛选区 -->
+          <div class="archive-header">
+            <div class="search-bar">
+              <div class="search-input">
+                <input type="text" class="form-control" id="caregiverSearch" placeholder="输入姓名/身份证号模糊搜索">
+              </div>
+              <button class="btn btn-primary" id="caregiverSearchBtn">
+                <i class="fa fa-search"></i> 查询
+              </button>
+              <button class="btn btn-outline-secondary advanced-filter-btn" id="caregiverFilterBtn">
+                <i class="fa fa-filter"></i> 高级筛选
+              </button>
+            </div>
+          </div>
+
+          <!-- 高级筛选区（默认隐藏） -->
+          <div class="filter-section" id="caregiverFilterSection">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label for="caregiverRegion">服务区域（仅负责区域）</label>
+                <select id="caregiverRegion" class="form-select">
+                  <option value="all">全部区域</option>
+                  <option value="region1">杭州市西湖区</option>
+                  <option value="region2">杭州市拱墅区</option>
+                  <option value="region3">杭州市滨江区</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="caregiverAccountStatus">账号状态</label>
+                <select id="caregiverAccountStatus" class="form-select">
+                  <option value="all">全部状态</option>
+                  <option value="normal">正常</option>
+                  <option value="locked">锁定</option>
+                </select>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button class="btn btn-primary" id="caregiverApplyFilterBtn">应用筛选</button>
+              <button class="btn btn-outline-secondary" id="caregiverResetFilterBtn">重置</button>
+            </div>
+          </div>
+
+          <!-- 数据列表 -->
+          <div class="archive-list">
+            <p class="text-muted mb-3">显示您管理的护理员数据（可查看详细信息和档案）</p>
+            <table class="archive-table">
+              <thead>
+                <tr>
+                  <th>姓名</th>
+                  <th>身份证号</th>
+                  <th>联系电话</th>
+                  <th>资质状态</th>
+                  <th>服务区域</th>
+                  <th>账号状态</th>
+                  <th>服务对象数</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="caregiverListBody">
+                <!-- 数据将通过JavaScript动态生成 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 服务对象档案详情模态框 -->
+  <div class="modal fade archive-modal" id="serviceObjectArchiveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="serviceObjectArchiveTitle">服务对象档案 - 陈一</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="archive-detail-header">
+            <p class="text-muted">档案ID: DO20240315001 | 签约时间: 2024-03-15 | 服务状态: 正常</p>
+            <button class="btn btn-primary download-all-btn">
+              <i class="fa fa-download"></i> 下载全部档案
+            </button>
+          </div>
+
+          <!-- 档案详情标签页（按材料提供阶段分类） -->
+          <ul class="nav nav-tabs archive-detail-tabs" id="serviceObjectDetailTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="initial-review-tab" data-bs-toggle="tab" data-bs-target="#initial-review" type="button" role="tab" aria-controls="initial-review" aria-selected="true" data-position="1">初评材料</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="after-announcement-tab" data-bs-toggle="tab" data-bs-target="#after-announcement" type="button" role="tab" aria-controls="after-announcement" aria-selected="false" data-position="2">公示后材料</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="after-signing-tab" data-bs-toggle="tab" data-bs-target="#after-signing" type="button" role="tab" aria-controls="after-signing" aria-selected="false" data-position="3">签约后材料</button>
+            </li>
+          </ul>
+
+          <!-- 档案详情内容区（按数据库结构组织） -->
+          <div class="tab-content" id="serviceObjectDetailTabContent">
+            <!-- 初评材料 (position=1) -->
+            <div class="tab-pane fade show active" id="initial-review" role="tabpanel" aria-labelledby="initial-review-tab">
+              <div class="archive-detail-content">
+                <p class="text-muted">初评阶段所需材料（根据数据库表 client_file_stru 的 position=1）</p>
+                <div class="file-list" id="initial-review-files">
+                  <!-- 文件将通过JavaScript根据数据库结构动态生成 -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 公示后材料 (position=2) -->
+            <div class="tab-pane fade" id="after-announcement" role="tabpanel" aria-labelledby="after-announcement-tab">
+              <div class="archive-detail-content">
+                <p class="text-muted">公示后阶段所需材料（根据数据库表 client_file_stru 的 position=2）</p>
+                <div class="file-list" id="after-announcement-files">
+                  <!-- 文件将通过JavaScript根据数据库结构动态生成 -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 签约后材料 (position=3) -->
+            <div class="tab-pane fade" id="after-signing" role="tabpanel" aria-labelledby="after-signing-tab">
+              <div class="archive-detail-content">
+                <p class="text-muted">签约后阶段所需材料（根据数据库表 client_file_stru 的 position=3）</p>
+                <div class="file-list" id="after-signing-files">
+                  <!-- 文件将通过JavaScript根据数据库结构动态生成 -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 护理员档案详情模态框 -->
+  <div class="modal fade archive-modal" id="caregiverArchiveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="caregiverArchiveTitle">护理员档案 - 李护理</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="archive-detail-header">
+            <p class="text-muted">档案ID: CG20240210001 | 入职时间: 2024-02-10 | 账号状态: 正常</p>
+            <button class="btn btn-primary download-all-btn">
+              <i class="fa fa-download"></i> 下载全部档案
+            </button>
+          </div>
+
+          <!-- 档案详情标签页 -->
+          <ul class="nav nav-tabs archive-detail-tabs" id="caregiverDetailTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="basic-info-tab" data-bs-toggle="tab" data-bs-target="#basic-info" type="button" role="tab" aria-controls="basic-info" aria-selected="true">基础信息</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="qualification-materials-tab" data-bs-toggle="tab" data-bs-target="#qualification-materials" type="button" role="tab" aria-controls="qualification-materials" aria-selected="false">资质材料</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="service-stats-tab" data-bs-toggle="tab" data-bs-target="#service-stats" type="button" role="tab" aria-controls="service-stats" aria-selected="false">服务统计</button>
+            </li>
+          </ul>
+
+          <!-- 档案详情内容区 -->
+          <div class="tab-content" id="caregiverDetailTabContent">
+            <!-- 基础信息 -->
+            <div class="tab-pane fade show active" id="basic-info" role="tabpanel" aria-labelledby="basic-info-tab">
+              <div class="archive-detail-content">
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="info-label">姓名</span>
+                    <span class="info-value">李护理</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">性别</span>
+                    <span class="info-value">女</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">年龄</span>
+                    <span class="info-value">45岁</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">身份证号</span>
+                    <span class="info-value">330602********1122</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">联系电话</span>
+                    <span class="info-value">138****1234</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">服务区域</span>
+                    <span class="info-value">杭州市西湖区</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">入职时间</span>
+                    <span class="info-value">2024-02-10</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">资质等级</span>
+                    <span class="info-value">高级护理员</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 资质材料（根据数据库表 nurse_file_stru 动态生成） -->
+            <div class="tab-pane fade" id="qualification-materials" role="tabpanel" aria-labelledby="qualification-materials-tab">
+              <div class="archive-detail-content">
+                <p class="text-muted">根据数据库表 nurse_file_stru 结构显示的护理员资质材料</p>
+                <div class="file-list" id="caregiver-qualification-files">
+                  <!-- 文件将通过JavaScript根据数据库结构动态生成 -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 服务统计 -->
+            <div class="tab-pane fade" id="service-stats" role="tabpanel" aria-labelledby="service-stats-tab">
+              <div class="archive-detail-content">
+                <p class="text-muted">护理员月度服务时长、服务对象满意率等统计信息（只读）</p>
+                <div class="stats-grid">
+                  <div class="stat-card">
+                    <span class="stat-label">9月服务时长</span>
+                    <span class="stat-value">168</span>
+                    <span class="stat-label">小时</span>
+                  </div>
+                  <div class="stat-card">
+                    <span class="stat-label">9月服务单数</span>
+                    <span class="stat-value">42</span>
+                    <span class="stat-label">单</span>
+                  </div>
+                  <div class="stat-card">
+                    <span class="stat-label">9月满意率</span>
+                    <span class="stat-value">98%</span>
+                    <span class="stat-label"></span>
+                  </div>
+                  <div class="stat-card">
+                    <span class="stat-label">累计服务对象</span>
+                    <span class="stat-value">15</span>
+                    <span class="stat-label">人</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 文件预览模态框 -->
+  <div class="modal fade preview-modal" id="filePreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="filePreviewTitle">文件预览</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="preview-content">
+            <img src="" alt="文件预览" class="preview-img" id="previewImage">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">关闭</button>
+          <button type="button" class="btn btn-primary" id="downloadPreviewFile">下载文件</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    $(function() {
+      // 初始化模态框
+      const serviceObjectArchiveModal = new bootstrap.Modal('#serviceObjectArchiveModal');
+      const caregiverArchiveModal = new bootstrap.Modal('#caregiverArchiveModal');
+      const filePreviewModal = new bootstrap.Modal('#filePreviewModal');
+      
+      // 当前预览文件路径
+      let currentPreviewFile = '';
+      let currentDownloadFileName = '';
+
+      // 护理员档案结构数据（基于数据库表 nurse_file_stru）
+      const nurseFileStructure = [
+        { Id: 1, file_name: '身份证', page_num: 2 },
+        { Id: 2, file_name: '职业技能证书', page_num: 1 },
+        { Id: 3, file_name: '服务合同', page_num: 0 }
+      ];
+
+      // 模拟护理员的实际档案文件数据
+      const mockNurseFiles = {
+        1: [ // 李护理的档案
+          { file_stru_id: 1, file_name: '身份证', file_url: 'https://via.placeholder.com/150x100?text=护理员身份证', file_type: 'JPG', file_size: '2.2 MB' },
+          { file_stru_id: 2, file_name: '职业技能证书', file_url: 'https://via.placeholder.com/150x100?text=技能证书', file_type: 'PDF', file_size: '3.5 MB' },
+          { file_stru_id: 3, file_name: '服务合同', file_url: 'https://via.placeholder.com/150x100?text=服务合同', file_type: 'PDF', file_size: '4.8 MB' }
+        ],
+        2: [ // 王护理的档案
+          { file_stru_id: 1, file_name: '身份证', file_url: 'https://via.placeholder.com/150x100?text=护理员身份证', file_type: 'JPG', file_size: '2.1 MB' },
+          { file_stru_id: 2, file_name: '职业技能证书', file_url: 'https://via.placeholder.com/150x100?text=技能证书', file_type: 'PDF', file_size: '3.2 MB' }
+        ],
+        3: [ // 张护理的档案
+          { file_stru_id: 1, file_name: '身份证', file_url: 'https://via.placeholder.com/150x100?text=护理员身份证', file_type: 'JPG', file_size: '2.3 MB' },
+          { file_stru_id: 2, file_name: '职业技能证书', file_url: 'https://via.placeholder.com/150x100?text=技能证书', file_type: 'PDF', file_size: '3.6 MB' },
+          { file_stru_id: 3, file_name: '服务合同', file_url: 'https://via.placeholder.com/150x100?text=服务合同', file_type: 'PDF', file_size: '4.5 MB' }
+        ],
+        4: [ // 刘护理的档案
+          { file_stru_id: 1, file_name: '身份证', file_url: 'https://via.placeholder.com/150x100?text=护理员身份证', file_type: 'JPG', file_size: '2.0 MB' }
+        ]
+      };
+
+      // 根据护理员档案结构生成文件列表
+      function renderNurseArchiveFiles(nurseId) {
+        const container = $('#caregiver-qualification-files');
+        container.empty();
+
+        // 获取该护理员的实际文件
+        const actualFiles = mockNurseFiles[nurseId] || [];
+        
+        // 按档案结构生成文件卡片
+        nurseFileStructure.forEach(fileStru => {
+          // 查找是否有对应的实际文件
+          const file = actualFiles.find(f => f.file_stru_id === fileStru.Id);
+          
+          if (file) {
+            container.append(createNurseFileCard(file, fileStru));
+          } else {
+            container.append(createNurseFileCardPlaceholder(fileStru));
+          }
+        });
+
+        // 重新绑定事件
+        bindFileEvents();
+      }
+
+      // 创建护理员文件卡片
+      function createNurseFileCard(file, fileStru) {
+        const pageNumInfo = fileStru.page_num > 0 ? `（需${fileStru.page_num}页）` : '';
+        
+        return $(`
+          <div class="file-card">
+            <div class="file-preview">
+              <img src="${file.file_url}" alt="${file.file_name}">
+              <span class="file-type">${file.file_type}</span>
+            </div>
+            <div class="file-info">
+              <div class="file-name">${file.file_name}${pageNumInfo}</div>
+              <div class="file-size">${file.file_size}</div>
+              <div class="file-actions">
+                <button class="btn btn-primary btn-sm file-action-btn preview-file" data-file="${file.file_url}">预览</button>
+                <button class="btn btn-outline-secondary btn-sm file-action-btn download-file" data-file="${file.file_name}">下载</button>
+              </div>
+            </div>
+          </div>
+        `);
+      }
+
+      // 创建护理员文件占位卡片（未上传）
+      function createNurseFileCardPlaceholder(fileStru) {
+        const pageNumInfo = fileStru.page_num > 0 ? `（需${fileStru.page_num}页）` : '';
+        
+        return $(`
+          <div class="file-card" style="opacity: 0.6;">
+            <div class="file-preview" style="background-color: #f0f0f0;">
+              <i class="fa fa-file-o" style="font-size: 48px; color: #ccc;"></i>
+            </div>
+            <div class="file-info">
+              <div class="file-name">${fileStru.file_name}${pageNumInfo}</div>
+              <div class="file-size text-muted">未上传</div>
+            </div>
+          </div>
+        `);
+      }
+
+      // 档案结构数据（基于数据库表 client_file_stru）
+      const clientFileStructure = [
+        { Id: 1, file_name: '本人身份证', page_num: 2, yang_need: false, optional: false, save_type: 1, position: 1 },
+        { Id: 2, file_name: '代理人身份证', page_num: 2, yang_need: false, optional: true, save_type: 1, position: 1 },
+        { Id: 3, file_name: '服务协议', page_num: 0, yang_need: false, optional: false, save_type: 1, position: 2 },
+        { Id: 4, file_name: '失能等级自评表', page_num: 1, yang_need: false, optional: false, save_type: 1, position: 1 },
+        { Id: 5, file_name: '评估申请表', page_num: 2, yang_need: false, optional: false, save_type: 1, position: 1 },
+        { Id: 6, file_name: '病情承诺书', page_num: 1, yang_need: false, optional: false, save_type: 1, position: 1 },
+        { Id: 7, file_name: '病例或证明', page_num: 0, yang_need: true, optional: false, save_type: 1, position: 1 },
+        { Id: 8, file_name: '评估结论书', page_num: 1, yang_need: false, optional: false, save_type: 1, position: 2 },
+        { Id: 9, file_name: '服务计划', page_num: 0, yang_need: false, optional: false, save_type: 2, position: 3 },
+        { Id: 10, file_name: '服务记录', page_num: 0, yang_need: false, optional: false, save_type: 2, position: 3 },
+        { Id: 11, file_name: '中止服务协议', page_num: 1, yang_need: false, optional: false, save_type: 3, position: 2 },
+        { Id: 12, file_name: '转出申请', page_num: 1, yang_need: false, optional: false, save_type: 3, position: 2 },
+        { Id: 13, file_name: '转入申请', page_num: 1, yang_need: false, optional: false, save_type: 3, position: 3 },
+        { Id: 14, file_name: '死亡证明', page_num: 1, yang_need: false, optional: false, save_type: 1, position: 2 }
+      ];
+
+      // 材料保管类型映射
+      const SAVE_TYPE_MAP = {
+        1: '只有一份',
+        2: '每月一份',
+        3: '记录材料日期'
+      };
+
+      // 材料提供阶段映射
+      const POSITION_MAP = {
+        1: '初评',
+        2: '公示后',
+        3: '签约后'
+      };
+
+      // 模拟服务对象的实际档案文件数据
+      const mockClientFiles = {
+        1: [ // 陈一的档案
+          { file_stru_id: 1, file_name: '本人身份证', file_url: 'https://via.placeholder.com/150x100?text=身份证正面', file_type: 'JPG', file_size: '2.4 MB', save_type: 1 },
+          { file_stru_id: 2, file_name: '代理人身份证', file_url: 'https://via.placeholder.com/150x100?text=代理人身份证', file_type: 'JPG', file_size: '2.1 MB', save_type: 1 },
+          { file_stru_id: 4, file_name: '失能等级自评表', file_url: 'https://via.placeholder.com/150x100?text=失能等级自评表', file_type: 'PDF', file_size: '1.2 MB', save_type: 1 },
+          { file_stru_id: 5, file_name: '评估申请表', file_url: 'https://via.placeholder.com/150x100?text=评估申请表', file_type: 'PDF', file_size: '1.5 MB', save_type: 1 },
+          { file_stru_id: 3, file_name: '服务协议', file_url: 'https://via.placeholder.com/150x100?text=服务协议', file_type: 'PDF', file_size: '5.6 MB', save_type: 1 },
+          { file_stru_id: 8, file_name: '评估结论书', file_url: 'https://via.placeholder.com/150x100?text=评估结论书', file_type: 'PDF', file_size: '2.3 MB', save_type: 1 },
+          { file_stru_id: 9, file_name: '服务计划', file_url: 'https://via.placeholder.com/150x100?text=9月服务计划', file_type: 'PDF', file_size: '2.8 MB', save_type: 2, material_date: '2024-09' },
+          { file_stru_id: 10, file_name: '服务记录', file_url: 'https://via.placeholder.com/150x100?text=9月服务记录', file_type: 'PDF', file_size: '4.1 MB', save_type: 2, material_date: '2024-09' }
+        ]
+      };
+
+      // 根据档案结构生成文件列表
+      function renderArchiveFiles(clientId, position) {
+        const containerId = position === 1 ? '#initial-review-files' : 
+                           position === 2 ? '#after-announcement-files' : 
+                           '#after-signing-files';
+        const container = $(containerId);
+        container.empty();
+
+        // 获取该阶段的所有档案结构
+        const fileStructures = clientFileStructure.filter(item => item.position === position);
+        
+        // 获取该服务对象的实际文件
+        const actualFiles = mockClientFiles[clientId] || [];
+        
+        // 按档案结构生成文件卡片
+        fileStructures.forEach(fileStru => {
+          // 查找是否有对应的实际文件
+          let fileCards = [];
+          
+          if (fileStru.save_type === 2) {
+            // 每月一份：查找所有该类型的文件
+            const monthlyFiles = actualFiles.filter(f => f.file_stru_id === fileStru.Id);
+            if (monthlyFiles.length > 0) {
+              monthlyFiles.forEach(file => {
+                fileCards.push(createFileCard(file, fileStru));
+              });
+            } else {
+              // 没有文件时显示占位
+              fileCards.push(createFileCardPlaceholder(fileStru));
+            }
+          } else if (fileStru.save_type === 3) {
+            // 记录材料日期：查找所有该类型的文件
+            const datedFiles = actualFiles.filter(f => f.file_stru_id === fileStru.Id);
+            if (datedFiles.length > 0) {
+              datedFiles.forEach(file => {
+                fileCards.push(createFileCard(file, fileStru));
+              });
+            } else {
+              fileCards.push(createFileCardPlaceholder(fileStru));
+            }
+          } else {
+            // 只有一份：查找单个文件
+            const file = actualFiles.find(f => f.file_stru_id === fileStru.Id);
+            if (file) {
+              fileCards.push(createFileCard(file, fileStru));
+            } else {
+              fileCards.push(createFileCardPlaceholder(fileStru));
+            }
+          }
+          
+          fileCards.forEach(card => container.append(card));
+        });
+
+        // 重新绑定事件
+        bindFileEvents();
+      }
+
+      // 创建文件卡片
+      function createFileCard(file, fileStru) {
+        const optionalBadge = fileStru.optional ? '<span class="badge bg-warning text-dark ms-2" style="font-size: 10px;">可选</span>' : '';
+        const yangNeedBadge = fileStru.yang_need ? '<span class="badge bg-info ms-2" style="font-size: 10px;">60岁以下</span>' : '';
+        const saveTypeBadge = fileStru.save_type === 2 ? '<span class="badge bg-secondary ms-2" style="font-size: 10px;">每月一份</span>' : 
+                             fileStru.save_type === 3 ? '<span class="badge bg-secondary ms-2" style="font-size: 10px;">记录日期</span>' : '';
+        const materialDateInfo = file.material_date ? `<div class="file-size">材料日期: ${file.material_date}</div>` : '';
+        
+        return $(`
+          <div class="file-card">
+            <div class="file-preview">
+              <img src="${file.file_url}" alt="${file.file_name}">
+              <span class="file-type">${file.file_type}</span>
+            </div>
+            <div class="file-info">
+              <div class="file-name">
+                ${file.file_name}
+                ${optionalBadge}
+                ${yangNeedBadge}
+                ${saveTypeBadge}
+              </div>
+              <div class="file-size">${file.file_size}</div>
+              ${materialDateInfo}
+              <div class="file-actions">
+                <button class="btn btn-primary btn-sm file-action-btn preview-file" data-file="${file.file_url}">预览</button>
+                <button class="btn btn-outline-secondary btn-sm file-action-btn download-file" data-file="${file.file_name}">下载</button>
+              </div>
+            </div>
+          </div>
+        `);
+      }
+
+      // 创建文件占位卡片（未上传）
+      function createFileCardPlaceholder(fileStru) {
+        const optionalBadge = fileStru.optional ? '<span class="badge bg-warning text-dark ms-2" style="font-size: 10px;">可选</span>' : '';
+        const yangNeedBadge = fileStru.yang_need ? '<span class="badge bg-info ms-2" style="font-size: 10px;">60岁以下</span>' : '';
+        const pageNumInfo = fileStru.page_num > 0 ? `（需${fileStru.page_num}页）` : '';
+        
+        return $(`
+          <div class="file-card" style="opacity: 0.6;">
+            <div class="file-preview" style="background-color: #f0f0f0;">
+              <i class="fa fa-file-o" style="font-size: 48px; color: #ccc;"></i>
+            </div>
+            <div class="file-info">
+              <div class="file-name">
+                ${fileStru.file_name}${pageNumInfo}
+                ${optionalBadge}
+                ${yangNeedBadge}
+              </div>
+              <div class="file-size text-muted">未上传</div>
+            </div>
+          </div>
+        `);
+      }
+
+      // 绑定文件操作事件
+      function bindFileEvents() {
+        $('.preview-file').off('click').on('click', function() {
+          currentPreviewFile = $(this).data('file');
+          currentDownloadFileName = $(this).closest('.file-info').find('.file-name').text().split(' ')[0];
+          $('#previewImage').attr('src', currentPreviewFile);
+          $('#filePreviewTitle').text(`预览: ${currentDownloadFileName}`);
+          filePreviewModal.show();
+        });
+
+        $('.download-file').off('click').on('click', function() {
+          const fileName = $(this).data('file');
+          alert(`开始下载文件: ${fileName}（实际项目中此处应触发文件下载）`);
+        });
+      }
+
+      // 服务对象档案 - 高级筛选展开/收起
+      $('#serviceObjectFilterBtn').click(function() {
+        $('#serviceObjectFilterSection').toggle();
+      });
+
+      // 护理员档案 - 高级筛选展开/收起
+      $('#caregiverFilterBtn').click(function() {
+        $('#caregiverFilterSection').toggle();
+      });
+
+      // 重置筛选条件
+      $('#serviceObjectResetFilterBtn').click(function() {
+        $('#serviceObjectRegion').val('all');
+        $('#serviceObjectStatus').val('all');
+        $('#serviceObjectSignStartDate').val('2024-01-01');
+        $('#serviceObjectSignEndDate').val('2025-12-31');
+      });
+
+      $('#caregiverResetFilterBtn').click(function() {
+        $('#caregiverRegion').val('all');
+        $('#caregiverAccountStatus').val('all');
+      });
+
+      // 查看服务对象档案
+      $('.view-service-object-archive').click(function() {
+        const archiveId = $(this).data('id');
+        // 根据档案ID加载不同数据（此处用模拟数据）
+        let archiveName = '';
+        switch(archiveId) {
+          case 1: archiveName = '陈一'; break;
+          case 2: archiveName = '吴二'; break;
+          case 3: archiveName = '郑三'; break;
+          case 4: archiveName = '冯四'; break;
+          case 5: archiveName = '钱五'; break;
+          default: archiveName = '服务对象';
+        }
+        $('#serviceObjectArchiveTitle').text(`服务对象档案 - ${archiveName}`);
+        
+        // 存储当前档案ID
+        $('#serviceObjectArchiveModal').data('current-archive-id', archiveId);
+        
+        // 根据数据库结构渲染各阶段的档案文件
+        // position=1: 初评材料
+        // position=2: 公示后材料  
+        // position=3: 签约后材料
+        renderArchiveFiles(archiveId, 1);
+        renderArchiveFiles(archiveId, 2);
+        renderArchiveFiles(archiveId, 3);
+        
+        serviceObjectArchiveModal.show();
+      });
+
+      // 标签页切换时重新渲染（如果需要）
+      $('#serviceObjectDetailTabs button').on('shown.bs.tab', function(e) {
+        const position = $(e.target).data('position');
+        // 从模态框标题或其他方式获取当前查看的档案ID
+        const currentArchiveId = $('#serviceObjectArchiveModal').data('current-archive-id') || 1;
+        if (position) {
+          renderArchiveFiles(currentArchiveId, position);
+        }
+      });
+
+      // 存储当前查看的档案ID
+      $('#serviceObjectArchiveModal').on('show.bs.modal', function() {
+        const archiveId = $('.view-service-object-archive').filter(function() {
+          return $(this).is(':visible') || $(this).closest('tr').is(':visible');
+        }).first().data('id') || 1;
+        $(this).data('current-archive-id', archiveId);
+      });
+
+      // 查看护理员档案
+      $('.view-caregiver-archive').click(function() {
+        const archiveId = $(this).data('id');
+        // 根据档案ID加载不同数据（此处用模拟数据）
+        let archiveName = '';
+        switch(archiveId) {
+          case 1: archiveName = '李护理'; break;
+          case 2: archiveName = '王护理'; break;
+          case 3: archiveName = '张护理'; break;
+          case 4: archiveName = '刘护理'; break;
+          default: archiveName = '护理员';
+        }
+        $('#caregiverArchiveTitle').text(`护理员档案 - ${archiveName}`);
+        
+        // 根据数据库表 nurse_file_stru 结构渲染护理员档案文件
+        renderNurseArchiveFiles(archiveId);
+        
+        caregiverArchiveModal.show();
+      });
+
+      // 预览和下载事件已在 bindFileEvents 中处理
+
+      // 下载预览文件
+      $('#downloadPreviewFile').click(function() {
+        alert(`开始下载文件: ${currentDownloadFileName}（实际项目中此处应触发文件下载）`);
+      });
+
+      // 下载全部档案（模拟）
+      $('.download-all-btn').click(function() {
+        const archiveTitle = $(this).closest('.modal').find('.modal-title').text();
+        alert(`开始下载全部档案: ${archiveTitle}（实际项目中此处应打包下载所有文件）`);
+      });
+
+      // 模拟服务对象数据
+      let serviceObjectData = [
+        { id: 1, name: '陈一', idCard: '330602********1234', address: '越城区XX街道XX社区', level: '重度失能', status: '正常', signDate: '2024-03-15', caregiver: '李护理' },
+        { id: 2, name: '吴二', idCard: '330602********5678', address: '柯桥区XX镇XX村', level: '中度失能', status: '正常', signDate: '2024-04-22', caregiver: '王护理' },
+        { id: 3, name: '郑三', idCard: '330602********9012', address: '上虞区XX街道XX小区', level: '轻度失能', status: '暂停', signDate: '2024-05-30', caregiver: '张护理' },
+        { id: 4, name: '冯四', idCard: '330602********3456', address: '诸暨市XX路XX号', level: '重度失能', status: '正常', signDate: '2024-06-18', caregiver: '李护理' },
+        { id: 5, name: '钱五', idCard: '330602********7890', address: '嵊州市XX街道XX村', level: '中度失能', status: '正常', signDate: '2024-07-05', caregiver: '王护理' }
+      ];
+      
+      // 模拟护理员数据
+      let caregiverData = [
+        { id: 1, name: '李护理', idCard: '330602********1122', phone: '138****1234', qualification: '已上传', region: '杭州市西湖区', accountStatus: '正常', serviceCount: 15 },
+        { id: 2, name: '王护理', idCard: '330602********3344', phone: '139****5678', qualification: '部分材料未归档', region: '杭州市拱墅区', accountStatus: '正常', serviceCount: 12 },
+        { id: 3, name: '张护理', idCard: '330602********5566', phone: '137****9012', qualification: '已上传', region: '杭州市滨江区', accountStatus: '正常', serviceCount: 18 },
+        { id: 4, name: '刘护理', idCard: '330602********7788', phone: '136****3456', qualification: '已上传', region: '杭州市西湖区', accountStatus: '锁定', serviceCount: 0 }
+      ];
+      
+      // 渲染服务对象列表
+      function renderServiceObjectList(data) {
+        const tbody = $('#serviceObjectListBody');
+        tbody.empty();
+        
+        if (data.length === 0) {
+          tbody.html('<tr><td colspan="8" class="text-center text-muted">暂无数据</td></tr>');
+          return;
+        }
+        
+        data.forEach(item => {
+          const statusClass = item.status === '正常' ? 'status-normal' : 'status-warning';
+          const row = $(`
+            <tr>
+              <td>${item.name}</td>
+              <td>${item.idCard}</td>
+              <td>${item.address}</td>
+              <td>${item.level}</td>
+              <td><span class="${statusClass}">${item.status}</span></td>
+              <td>${item.signDate}</td>
+              <td>${item.caregiver || '-'}</td>
+              <td>
+                <button class="btn btn-primary btn-sm action-btn view-service-object-detail" data-id="${item.id}">查看详情</button>
+                <button class="btn btn-outline-primary btn-sm action-btn view-service-object-archive" data-id="${item.id}">查看档案</button>
+              </td>
+            </tr>
+          `);
+          tbody.append(row);
+        });
+      }
+      
+      // 渲染护理员列表
+      function renderCaregiverList(data) {
+        const tbody = $('#caregiverListBody');
+        tbody.empty();
+        
+        if (data.length === 0) {
+          tbody.html('<tr><td colspan="8" class="text-center text-muted">暂无数据</td></tr>');
+          return;
+        }
+        
+        data.forEach(item => {
+          const qualClass = item.qualification === '已上传' ? 'status-normal' : 'status-warning';
+          const accountClass = item.accountStatus === '正常' ? 'status-normal' : 'status-warning';
+          const row = $(`
+            <tr>
+              <td>${item.name}</td>
+              <td>${item.idCard}</td>
+              <td>${item.phone}</td>
+              <td><span class="${qualClass}">${item.qualification}</span></td>
+              <td>${item.region}</td>
+              <td><span class="${accountClass}">${item.accountStatus}</span></td>
+              <td>${item.serviceCount}</td>
+              <td>
+                <button class="btn btn-primary btn-sm action-btn view-caregiver-detail" data-id="${item.id}">查看详情</button>
+                <button class="btn btn-outline-primary btn-sm action-btn view-caregiver-archive" data-id="${item.id}">查看档案</button>
+              </td>
+            </tr>
+          `);
+          tbody.append(row);
+        });
+      }
+      
+      // 搜索服务对象
+      $('#serviceObjectSearchBtn').click(function() {
+        const searchText = $('#serviceObjectSearch').val().trim();
+        let filteredData = serviceObjectData;
+        
+        if (searchText) {
+          filteredData = serviceObjectData.filter(item => 
+            item.name.includes(searchText) || item.idCard.includes(searchText)
+          );
+        }
+        
+        renderServiceObjectList(filteredData);
+      });
+      
+      // 搜索护理员
+      $('#caregiverSearchBtn').click(function() {
+        const searchText = $('#caregiverSearch').val().trim();
+        let filteredData = caregiverData;
+        
+        if (searchText) {
+          filteredData = caregiverData.filter(item => 
+            item.name.includes(searchText) || item.idCard.includes(searchText)
+          );
+        }
+        
+        renderCaregiverList(filteredData);
+      });
+      
+      // 初始化列表
+      renderServiceObjectList(serviceObjectData);
+      renderCaregiverList(caregiverData);
+      
+      // 查看服务对象详情
+      $(document).on('click', '.view-service-object-detail', function() {
+        const id = $(this).data('id');
+        const item = serviceObjectData.find(d => d.id === id);
+        if (item) {
+          alert(`服务对象详情：\n姓名：${item.name}\n身份证号：${item.idCard}\n地址：${item.address}\n失能等级：${item.level}\n服务状态：${item.status}\n签约时间：${item.signDate}\n当前护理员：${item.caregiver || '未分配'}`);
+        }
+      });
+      
+      // 查看护理员详情
+      $(document).on('click', '.view-caregiver-detail', function() {
+        const id = $(this).data('id');
+        const item = caregiverData.find(d => d.id === id);
+        if (item) {
+          alert(`护理员详情：\n姓名：${item.name}\n身份证号：${item.idCard}\n联系电话：${item.phone}\n资质状态：${item.qualification}\n服务区域：${item.region}\n账号状态：${item.accountStatus}\n服务对象数：${item.serviceCount}`);
+        }
+      });
+
+      // 应用筛选（模拟）
+      $('#serviceObjectApplyFilterBtn').click(function() {
+        const region = $('#serviceObjectRegion').val();
+        const status = $('#serviceObjectStatus').val();
+        const startDate = $('#serviceObjectSignStartDate').val();
+        const endDate = $('#serviceObjectSignEndDate').val();
+        alert(`应用服务对象筛选: 区域=${region}, 状态=${status}, 时间=${startDate}至${endDate}（实际项目中此处应执行筛选逻辑）`);
+      });
+
+      $('#caregiverApplyFilterBtn').click(function() {
+        const region = $('#caregiverRegion').val();
+        const status = $('#caregiverAccountStatus').val();
+        alert(`应用护理员筛选: 区域=${region}, 状态=${status}（实际项目中此处应执行筛选逻辑）`);
+      });
+
+      // 标签页切换事件
+      $('#archiveTabs button').click(function() {
+        const tabName = $(this).text();
+        $('.page-title').text(`${tabName} - 分管档案查询`);
+      });
+    });
+  </script>
+</body>
+</html>

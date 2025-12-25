@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>流程管理 - 居家长护业务管理系统</title>
+  <!-- 引入外部资源 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <style>
+    /* 继承全局样式 */
+    body { font-family: "微软雅黑", "思源黑体", sans-serif; background-color: #f5f7fa; color: #333; }
+    .btn-primary { background-color: #1890FF; border-color: #1890FF; }
+    .btn-primary:hover { background-color: #096DD9; border-color: #096DD9; }
+    .btn-outline-secondary { border-color: #ddd; color: #666; }
+    .btn-outline-secondary:hover { background-color: #f5f5f5; border-color: #ccc; }
+    .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .card-header { background: #fff; border-bottom: 1px solid #f0f0f0; border-radius: 12px 12px 0 0; padding: 15px 20px; font-weight: 600; font-size: 15px; }
+    .card-body { padding: 20px; }
+    /* 布局样式 */
+    .app-container { display: flex; min-height: 100vh; }
+    /* 侧边导航 */
+    .sidebar { width: 220px; background: #fff; box-shadow: 1px 0 2px rgba(0,0,0,0.05); padding: 20px 0; flex-shrink: 0; }
+    .sidebar-logo { text-align: center; padding: 0 20px 20px; border-bottom: 1px solid #f0f0f0; margin-bottom: 20px; }
+    .sidebar-logo img { height: 40px; margin-bottom: 8px; }
+    .sidebar-logo h3 { font-size: 16px; color: #1890FF; font-weight: 600; margin: 0; }
+    .nav-menu { list-style: none; padding: 0; margin: 0; }
+    .nav-item { margin-bottom: 4px; }
+    .nav-link { display: flex; align-items: center; padding: 12px 20px; color: #666; text-decoration: none; font-size: 14px; border-left: 3px solid transparent; }
+    .nav-link:hover, .nav-link.active { color: #1890FF; background-color: #f0f7ff; border-left: 3px solid #1890FF; }
+    .nav-link i { font-size: 18px; margin-right: 12px; width: 20px; text-align: center; }
+    .nav-group-title { padding: 15px 20px 5px; font-size: 12px; color: #999; font-weight: 500; }
+    /* 主内容区 */
+    .main-content { flex: 1; padding: 20px; overflow-y: auto; }
+    /* 顶部导航 */
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .page-title { font-size: 20px; font-weight: 600; color: #333; margin: 0; }
+    .user-info { display: flex; align-items: center; }
+    .notification { position: relative; margin-right: 20px; cursor: pointer; }
+    .notification i { font-size: 20px; color: #666; }
+    .notification-badge { position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; background: #FF4D4F; color: #fff; border-radius: 50%; font-size: 12px; text-align: center; line-height: 18px; }
+    .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #1890FF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; margin-right: 10px; }
+    .user-name { font-size: 14px; font-weight: 500; }
+
+    /* 流程管理页面专属样式 */
+    .nav-tabs .nav-link { border: 1px solid transparent; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; color: #666; padding: 10px 20px; position: relative; }
+    .nav-tabs .nav-link.active { color: #1890FF; background-color: #fff; border-color: #dee2e6 #dee2e6 #fff; border-top: 3px solid #1890FF; font-weight: 500; }
+    .tab-content { margin-top: 20px; }
+    .badge-count { position: absolute; top: 5px; right: 15px; background-color: #FF4D4F; color: white; border-radius: 10px; padding: 0 5px; font-size: 12px; height: 16px; line-height: 16px; }
+    
+    /* 筛选区样式 */
+    .filter-section { background: #fff; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; }
+    .filter-row { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+    .filter-group { flex: 1; min-width: 200px; }
+    .filter-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    .filter-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+    
+    /* 表格样式 */
+    .process-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .process-table th, .process-table td { border: 1px solid #f0f0f0; padding: 10px 12px; text-align: center; font-size: 13px; }
+    .process-table th { background-color: #f8f9fa; font-weight: 500; }
+    .process-table tbody tr:hover { background-color: #f9f9f9; }
+    .status-pending { color: #FAAD14; font-weight: 500; }
+    .status-approved { color: #52C41A; font-weight: 500; }
+    .status-rejected { color: #FF4D4F; font-weight: 500; }
+    .status-processing { color: #1890FF; font-weight: 500; }
+    .status-completed { color: #52C41A; font-weight: 500; }
+    
+    /* 模态框样式 */
+    .modal { z-index: 10000 !important; }
+    .modal-backdrop { z-index: 9999 !important; }
+    .process-form-section { display: none; }
+    .process-form-section.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 侧边导航 -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <img src="https://via.placeholder.com/80x40?text=居家长护" alt="系统Logo">
+        <h3>服务主管工作平台</h3>
+      </div>
+      
+      <!-- 导航分组：看板管理 -->
+      <div class="nav-group-title">看板管理</div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="数据驾驶舱.html" class="nav-link">
+            <i class="fa fa-dashboard"></i>
+            <span>数据驾驶舱</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="index.html" class="nav-link">
+            <i class="fa fa-dashboard"></i>
+            <span>服务对象看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="总体统计.html" class="nav-link">
+            <i class="fa fa-bar-chart"></i>
+            <span>总体统计看板</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="流程管理.html" class="nav-link active">
+            <i class="fa fa-sitemap"></i>
+            <span>流程管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="线上回访.html" class="nav-link">
+            <i class="fa fa-phone"></i>
+            <span>线上线下回访执行</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="服务对象分配.html" class="nav-link">
+            <i class="fa fa-users"></i>
+            <span>服务对象分配</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="新增服务对象管理.html" class="nav-link">
+            <i class="fa fa-user-plus"></i>
+            <span>新增服务对象配置</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="首月服务计划管理.html" class="nav-link">
+            <i class="fa fa-calendar"></i>
+            <span>服务计划管理或打印</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="平台工单差异查询.html" class="nav-link">
+            <i class="fa fa-search"></i>
+            <span>医保工单差异查询</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="工单管理.html" class="nav-link">
+            <i class="fa fa-tasks"></i>
+            <span>工单管理</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="重点服务对象管理.html" class="nav-link">
+            <i class="fa fa-star"></i>
+            <span>重点服务对象管理</span>
+          </a>
+        </li>
+      </ul>
+      
+      <!-- 导航分组：系统设置 -->
+      <div class="nav-group-title">系统设置</div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#" class="nav-link" id="caregiverSettingsLink">
+            <i class="fa fa-cog"></i>
+            <span>护理员设置</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <!-- 顶部导航 -->
+      <div class="top-nav">
+        <h1 class="page-title">流程管理</h1>
+        <div class="user-info">
+          <div class="notification">
+            <i class="fa fa-bell-o"></i>
+            <span class="notification-badge">3</span>
+          </div>
+          <div class="user-avatar">主</div>
+          <div class="user-name">服务主管</div>
+        </div>
+      </div>
+
+      <!-- 流程管理标签页 -->
+      <ul class="nav nav-tabs" id="processTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="new-process-tab" data-bs-toggle="tab" data-bs-target="#new-process" type="button" role="tab">
+            新发起流程
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="pending-process-tab" data-bs-toggle="tab" data-bs-target="#pending-process" type="button" role="tab">
+            待处理流程
+            <span class="badge-count">5</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="waiting-approval-tab" data-bs-toggle="tab" data-bs-target="#waiting-approval" type="button" role="tab">
+            待审批流程
+            <span class="badge-count">3</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="completed-process-tab" data-bs-toggle="tab" data-bs-target="#completed-process" type="button" role="tab">
+            已完成流程
+          </button>
+        </li>
+      </ul>
+
+      <!-- 标签页内容 -->
+      <div class="tab-content" id="processTabContent">
+        <!-- 新发起流程 -->
+        <div class="tab-pane fade show active" id="new-process" role="tabpanel">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">新发起流程</h5>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">选择服务对象 <span class="text-danger">*</span></label>
+                <select class="form-select" id="processObjectSelect">
+                  <option value="">请选择服务对象</option>
+                  <option value="1">李四 - 330101********1234</option>
+                  <option value="2">王五 - 330102********5678</option>
+                  <option value="3">赵六 - 330103********9012</option>
+                </select>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label">流程类型 <span class="text-danger">*</span></label>
+                <select class="form-select" id="processTypeSelect">
+                  <option value="">请选择流程类型</option>
+                  <option value="1">暂停申请</option>
+                  <option value="2">恢复申请</option>
+                  <option value="3">转出申请</option>
+                  <option value="4">转入申请</option>
+                  <option value="5">死亡申请</option>
+                  <option value="6">永久放弃</option>
+                </select>
+              </div>
+              
+              <div class="d-grid gap-2">
+                <button class="btn btn-primary" id="startProcessBtn">
+                  <i class="fa fa-plus"></i> 发起流程
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 待处理流程（需要自己审批） -->
+        <div class="tab-pane fade" id="pending-process" role="tabpanel">
+          <div class="filter-section">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label>流程类型</label>
+                <select class="form-select" id="pendingTypeFilter">
+                  <option value="all">全部类型</option>
+                  <option value="1">暂停申请</option>
+                  <option value="2">恢复申请</option>
+                  <option value="3">转出申请</option>
+                  <option value="4">转入申请</option>
+                  <option value="5">死亡申请</option>
+                  <option value="6">永久放弃</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>申请日期</label>
+                <input type="date" class="form-control" id="pendingDateFilter">
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button class="btn btn-primary" id="pendingSearchBtn">
+                <i class="fa fa-search"></i> 查询
+              </button>
+              <button class="btn btn-outline-secondary" id="pendingResetBtn">
+                <i class="fa fa-refresh"></i> 重置
+              </button>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-body">
+              <table class="process-table">
+                <thead>
+                  <tr>
+                    <th>服务对象</th>
+                    <th>流程类型</th>
+                    <th>申请人</th>
+                    <th>申请日期</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="pendingProcessTableBody">
+                  <tr>
+                    <td>李四</td>
+                    <td>暂停申请</td>
+                    <td>李护理</td>
+                    <td>2025-10-15</td>
+                    <td><span class="status-pending">待审批</span></td>
+                    <td>
+                      <button class="btn btn-sm btn-primary view-process-btn" data-id="1" data-type="pause">查看详情</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>王五</td>
+                    <td>死亡申请</td>
+                    <td>王护理</td>
+                    <td>2025-10-14</td>
+                    <td><span class="status-pending">待审批</span></td>
+                    <td>
+                      <button class="btn btn-sm btn-primary view-process-btn" data-id="2" data-type="death">查看详情</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 待审批流程（自己发起等待别人审批） -->
+        <div class="tab-pane fade" id="waiting-approval" role="tabpanel">
+          <div class="filter-section">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label>流程类型</label>
+                <select class="form-select" id="waitingTypeFilter">
+                  <option value="all">全部类型</option>
+                  <option value="1">暂停申请</option>
+                  <option value="2">恢复申请</option>
+                  <option value="3">转出申请</option>
+                  <option value="4">转入申请</option>
+                  <option value="5">死亡申请</option>
+                  <option value="6">永久放弃</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>申请日期</label>
+                <input type="date" class="form-control" id="waitingDateFilter">
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button class="btn btn-primary" id="waitingSearchBtn">
+                <i class="fa fa-search"></i> 查询
+              </button>
+              <button class="btn btn-outline-secondary" id="waitingResetBtn">
+                <i class="fa fa-refresh"></i> 重置
+              </button>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-body">
+              <table class="process-table">
+                <thead>
+                  <tr>
+                    <th>服务对象</th>
+                    <th>流程类型</th>
+                    <th>申请日期</th>
+                    <th>当前审批人</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="waitingApprovalTableBody">
+                  <tr>
+                    <td>赵六</td>
+                    <td>转出申请</td>
+                    <td>2025-10-13</td>
+                    <td>机构负责人</td>
+                    <td><span class="status-processing">审批中</span></td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-primary view-process-btn" data-id="3" data-type="transfer">查看详情</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>钱七</td>
+                    <td>暂停申请</td>
+                    <td>2025-10-12</td>
+                    <td>机构负责人</td>
+                    <td><span class="status-processing">审批中</span></td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-primary view-process-btn" data-id="4" data-type="pause">查看详情</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 已完成流程（自己发起的） -->
+        <div class="tab-pane fade" id="completed-process" role="tabpanel">
+          <div class="filter-section">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label>流程类型</label>
+                <select class="form-select" id="completedTypeFilter">
+                  <option value="all">全部类型</option>
+                  <option value="1">暂停申请</option>
+                  <option value="2">恢复申请</option>
+                  <option value="3">转出申请</option>
+                  <option value="4">转入申请</option>
+                  <option value="5">死亡申请</option>
+                  <option value="6">永久放弃</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>完成日期</label>
+                <input type="date" class="form-control" id="completedDateFilter">
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button class="btn btn-primary" id="completedSearchBtn">
+                <i class="fa fa-search"></i> 查询
+              </button>
+              <button class="btn btn-outline-secondary" id="completedResetBtn">
+                <i class="fa fa-refresh"></i> 重置
+              </button>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-body">
+              <table class="process-table">
+                <thead>
+                  <tr>
+                    <th>服务对象</th>
+                    <th>流程类型</th>
+                    <th>申请日期</th>
+                    <th>完成日期</th>
+                    <th>审批结果</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="completedProcessTableBody">
+                  <tr>
+                    <td>孙八</td>
+                    <td>恢复申请</td>
+                    <td>2025-10-10</td>
+                    <td>2025-10-11</td>
+                    <td><span class="status-approved">已通过</span></td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-primary view-process-btn" data-id="5" data-type="resume">查看详情</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>周九</td>
+                    <td>暂停申请</td>
+                    <td>2025-10-08</td>
+                    <td>2025-10-09</td>
+                    <td><span class="status-rejected">已驳回</span></td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-primary view-process-btn" data-id="6" data-type="pause">查看详情</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 流程详情模态框 -->
+  <div class="modal fade" id="processDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="processDetailModalTitle">流程详情</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <ul class="nav nav-tabs" id="detailTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="detail-info-tab" data-bs-toggle="tab" data-bs-target="#detail-info" type="button" role="tab">申请信息</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="detail-flow-tab" data-bs-toggle="tab" data-bs-target="#detail-flow" type="button" role="tab">审批流程</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="detail-history-tab" data-bs-toggle="tab" data-bs-target="#detail-history" type="button" role="tab">变动历史</button>
+            </li>
+          </ul>
+          <div class="tab-content mt-3" id="detailTabContent">
+            <div class="tab-pane fade show active" id="detail-info" role="tabpanel">
+              <div id="processDetailInfo">
+                <!-- 申请信息将通过JavaScript动态生成 -->
+              </div>
+            </div>
+            <div class="tab-pane fade" id="detail-flow" role="tabpanel">
+              <div id="processDetailFlow">
+                <!-- 审批流程将通过JavaScript动态生成 -->
+              </div>
+            </div>
+            <div class="tab-pane fade" id="detail-history" role="tabpanel">
+              <div id="processDetailHistory">
+                <!-- 变动历史将通过JavaScript动态生成 -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+          <button type="button" class="btn btn-primary" id="approveProcessBtn" style="display: none;">审批通过</button>
+          <button type="button" class="btn btn-danger" id="rejectProcessBtn" style="display: none;">驳回</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 审批操作模态框 -->
+  <div class="modal fade" id="approvalActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="approvalActionModalTitle">审批操作</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">审批意见 <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="approvalComment" rows="4" required placeholder="请输入审批意见" maxlength="128"></textarea>
+          </div>
+          <div class="mb-3" id="rejectReasonGroup" style="display: none;">
+            <label class="form-label">驳回原因 <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="rejectReason" rows="3" placeholder="请输入驳回原因" maxlength="128"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" id="confirmApprovalBtn">确认</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 流程发起模态框 -->
+  <div class="modal fade" id="processModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="processModalTitle">发起流程申请</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="processForm">
+            <input type="hidden" id="processObjectId">
+            <input type="hidden" id="processObjectName">
+            <input type="hidden" id="processType">
+            
+            <div class="mb-3">
+              <label class="form-label">服务对象</label>
+              <input type="text" class="form-control" id="processObjectNameDisplay" readonly>
+            </div>
+            
+            <!-- 暂停申请表单 -->
+            <div class="process-form-section" id="pauseFormSection">
+              <div class="mb-3">
+                <label class="form-label">暂停开始日期 <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="pauseStartDate" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">暂停原因 <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="pauseReason" rows="3" required placeholder="请详细说明暂停原因" maxlength="254"></textarea>
+              </div>
+            </div>
+            
+            <!-- 永久放弃申请表单 -->
+            <div class="process-form-section" id="abandonFormSection" style="display: none;">
+              <div class="mb-3">
+                <label class="form-label">放弃日期 <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="abandonDate" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">放弃原因 <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="abandonReason" rows="3" required placeholder="请详细说明永久放弃原因" maxlength="254"></textarea>
+              </div>
+            </div>
+            
+            <!-- 转出申请表单（红色列字段） -->
+            <div class="process-form-section" id="transferFormSection" style="display: none;">
+              <div class="mb-3">
+                <label class="form-label">转出日期 <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="transferDate" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">转出原因 <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="transferReason" rows="3" required placeholder="请详细说明转出原因" maxlength="254"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">转出后是否居家护理 <span class="text-danger">*</span></label>
+                <select class="form-select" id="inHome" required>
+                  <option value="">请选择</option>
+                  <option value="true">是</option>
+                  <option value="false">否</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">转出地定点服务机构名称 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="serviceName" required placeholder="请输入转出地定点服务机构名称" maxlength="128">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">转出地址 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="newAddress" required placeholder="请输入转出地址" maxlength="128">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">转出地代理人 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="newAgent" required placeholder="请输入转出地代理人姓名" maxlength="30">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">转出地代理人电话 <span class="text-danger">*</span></label>
+                <input type="tel" class="form-control" id="newPhone" required placeholder="请输入11位手机号码" maxlength="11" pattern="[0-9]{11}">
+              </div>
+            </div>
+            
+            <!-- 转入申请表单（蓝色列字段） -->
+            <div class="process-form-section" id="transferInFormSection" style="display: none;">
+              <div class="mb-3">
+                <label class="form-label">转入日期 <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="transferInDate" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">转入原因 <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="transferInReason" rows="3" required placeholder="请详细说明转入原因" maxlength="254"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">转入时当月已享受的服务时长（小时） <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="usedTime" required placeholder="请输入在转出机构已享受的服务时长" step="0.1" min="0">
+                <small class="form-text text-muted">对于未在本机构享受过服务的转入人员，必须先录入人员信息后再批准转入</small>
+              </div>
+            </div>
+            
+            <!-- 恢复申请表单 -->
+            <div class="process-form-section" id="resumeFormSection" style="display: none;">
+              <div class="mb-3">
+                <label class="form-label">恢复日期 <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="resumeDate" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">恢复原因 <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="resumeReason" rows="3" required placeholder="请详细说明恢复原因" maxlength="254"></textarea>
+              </div>
+            </div>
+            
+            <!-- 死亡申请表单 -->
+            <div class="process-form-section" id="deathFormSection" style="display: none;">
+              <div class="mb-3">
+                <label class="form-label">死亡日期 <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="deathDate" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">死亡原因 <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="deathReason" rows="3" required placeholder="请详细说明死亡原因" maxlength="254"></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" id="submitProcessBtn">提交申请</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    $(function() {
+      // ========== 全局配置和工具函数 ==========
+      const processModal = new bootstrap.Modal('#processModal');
+      const processDetailModal = new bootstrap.Modal('#processDetailModal');
+      const approvalActionModal = new bootstrap.Modal('#approvalActionModal');
+      
+      // 申请类型映射（对应数据库ser_req_type表）
+      const reqTypeMap = {
+        '1': '暂停申请',
+        '2': '恢复申请',
+        '3': '转出申请',
+        '4': '转入申请',
+        '5': '死亡申请',
+        '6': '永久放弃'
+      };
+      
+      // 当前登录用户ID（实际应从后端获取）
+      const currentUserId = 1; // 服务主管ID
+      const currentUserName = '服务主管';
+      
+      // ========== 数据存储（模拟，实际应从后端API获取） ==========
+      // 待处理流程数据（需要自己审批的流程）
+      let pendingProcessData = [
+        { id: 1, client_id: 1, client_name: '李四', req_type: '1', start_time: '2025-10-15 10:30:00', reason: '服务对象因突发疾病住院治疗', promoter_id: 2, promoter_name: '李护理', completed: false, can_approve: true },
+        { id: 2, client_id: 2, client_name: '王五', req_type: '5', start_time: '2025-10-14 09:20:00', reason: '服务对象因病去世', promoter_id: 3, promoter_name: '王护理', completed: false, can_approve: true }
+      ];
+      
+      // 待审批流程数据（自己发起等待别人审批的流程）
+      let waitingApprovalData = [
+        { id: 3, client_id: 3, client_name: '赵六', req_type: '3', start_time: '2025-10-13 14:15:00', reason: '服务对象因搬迁需要转出', promoter_id: 1, promoter_name: currentUserName, completed: false, current_approver: '机构负责人' },
+        { id: 4, client_id: 4, client_name: '钱七', req_type: '1', start_time: '2025-10-12 11:00:00', reason: '服务对象暂时中止服务', promoter_id: 1, promoter_name: currentUserName, completed: false, current_approver: '机构负责人' }
+      ];
+      
+      // 已完成流程数据（自己发起的已完成的流程）
+      let completedProcessData = [
+        { id: 5, client_id: 5, client_name: '孙八', req_type: '2', start_time: '2025-10-10 08:30:00', reason: '服务对象已康复出院', promoter_id: 1, promoter_name: currentUserName, completed: true, complete_time: '2025-10-11 16:20:00', result: 'approved' },
+        { id: 6, client_id: 6, client_name: '周九', req_type: '1', start_time: '2025-10-08 10:00:00', reason: '服务对象暂停服务', promoter_id: 1, promoter_name: currentUserName, completed: true, complete_time: '2025-10-09 14:30:00', result: 'rejected' }
+      ];
+      
+      // ========== 1. 新发起流程功能 ==========
+      $('#startProcessBtn').click(function() {
+        const objectId = $('#processObjectSelect').val();
+        const processType = $('#processTypeSelect').val();
+        
+        if (!objectId) {
+          alert('请选择服务对象');
+          return;
+        }
+        
+        if (!processType) {
+          alert('请选择流程类型');
+          return;
+        }
+        
+        // 获取服务对象信息（实际应从后端获取）
+        const objectName = $('#processObjectSelect option:selected').text().split(' - ')[0];
+        
+        showProcessModal(processType, { id: objectId, name: objectName });
+      });
+      
+      // 显示流程发起模态框
+      function showProcessModal(processType, obj) {
+        $('#processModalTitle').text(`发起${reqTypeMap[processType]} - ${obj.name}`);
+        $('#processObjectId').val(obj.id);
+        $('#processObjectName').val(obj.name);
+        $('#processType').val(processType);
+        $('#processObjectNameDisplay').val(obj.name);
+        
+        // 根据流程类型显示不同的表单
+        $('.process-form-section').hide();
+        if (processType === '1') {
+          $('#pauseFormSection').show();
+        } else if (processType === '2') {
+          $('#resumeFormSection').show();
+        } else if (processType === '3') {
+          $('#transferFormSection').show();
+        } else if (processType === '4') {
+          $('#transferInFormSection').show();
+        } else if (processType === '5') {
+          $('#deathFormSection').show();
+        } else if (processType === '6') {
+          $('#abandonFormSection').show();
+        }
+        
+        // 重置表单
+        $('#processForm')[0].reset();
+        $('#processObjectId').val(obj.id);
+        $('#processObjectName').val(obj.name);
+        $('#processObjectNameDisplay').val(obj.name);
+        $('#processType').val(processType);
+        
+        processModal.show();
+      }
+      
+      // 提交流程申请
+      $('#submitProcessBtn').click(function() {
+        const processType = $('#processType').val();
+        const objId = $('#processObjectId').val();
+        const objName = $('#processObjectName').val();
+        
+        let formData = {
+          objectId: objId,
+          objectName: objName,
+          type: processType
+        };
+        
+        // 根据流程类型收集不同的表单数据（对应clt_chan_req表结构）
+        if (processType === '1') {
+          // 暂停申请
+          formData.startDate = $('#pauseStartDate').val();
+          formData.reason = $('#pauseReason').val();
+        } else if (processType === '2') {
+          // 恢复申请
+          formData.resumeDate = $('#resumeDate').val();
+          formData.reason = $('#resumeReason').val();
+        } else if (processType === '3') {
+          // 转出申请（红色列字段）
+          formData.transferDate = $('#transferDate').val();
+          formData.reason = $('#transferReason').val();
+          formData.in_home = $('#inHome').val() === 'true';
+          formData.service_name = $('#serviceName').val();
+          formData.new_address = $('#newAddress').val();
+          formData.new_agent = $('#newAgent').val();
+          formData.new_phone = $('#newPhone').val();
+        } else if (processType === '4') {
+          // 转入申请（蓝色列字段）
+          formData.transferInDate = $('#transferInDate').val();
+          formData.reason = $('#transferInReason').val();
+          formData.used_time = parseFloat($('#usedTime').val());
+        } else if (processType === '5') {
+          // 死亡申请
+          formData.deathDate = $('#deathDate').val();
+          formData.reason = $('#deathReason').val();
+        } else if (processType === '6') {
+          // 永久放弃
+          formData.abandonDate = $('#abandonDate').val();
+          formData.reason = $('#abandonReason').val();
+        }
+        
+        // 验证表单
+        if (!validateProcessForm(processType, formData)) {
+          return;
+        }
+        
+        // 提交申请（实际项目中应调用后端API）
+        console.log('提交流程申请:', formData);
+        
+        // 生成新的流程ID（实际应从后端获取）
+        const newProcessId = Math.max(...waitingApprovalData.map(p => p.id), 0) + 1;
+        
+        // 添加到待审批流程列表（自己发起等待别人审批）
+        const newProcess = {
+          id: newProcessId,
+          client_id: parseInt(objId),
+          client_name: objName,
+          req_type: processType,
+          start_time: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          reason: formData.reason,
+          promoter_id: currentUserId,
+          promoter_name: currentUserName,
+          completed: false,
+          current_approver: '机构负责人', // 实际应从后端获取
+          // 转出申请特有字段
+          in_home: formData.in_home,
+          service_name: formData.service_name,
+          new_address: formData.new_address,
+          new_agent: formData.new_agent,
+          new_phone: formData.new_phone,
+          // 转入申请特有字段
+          used_time: formData.used_time
+        };
+        
+        waitingApprovalData.push(newProcess);
+        
+        alert(`已成功发起${reqTypeMap[processType]}，等待审批`);
+        
+        processModal.hide();
+        
+        // 切换到待审批流程标签页并刷新
+        $('#waiting-approval-tab').tab('show');
+        setTimeout(() => {
+          renderWaitingApprovalList();
+        }, 300);
+      });
+      
+      // 验证流程表单
+      function validateProcessForm(type, data) {
+        if (type === '1') {
+          if (!data.startDate || !data.reason) {
+            alert('请填写暂停开始日期和原因');
+            return false;
+          }
+        } else if (type === '2') {
+          if (!data.resumeDate || !data.reason) {
+            alert('请填写恢复日期和原因');
+            return false;
+          }
+        } else if (type === '3') {
+          if (!data.transferDate || !data.reason || data.in_home === undefined || !data.service_name || !data.new_address || !data.new_agent || !data.new_phone) {
+            alert('请填写转出申请的所有必填项');
+            return false;
+          }
+          if (data.new_phone.length !== 11 || !/^\d{11}$/.test(data.new_phone)) {
+            alert('请输入正确的11位手机号码');
+            return false;
+          }
+        } else if (type === '4') {
+          if (!data.transferInDate || !data.reason || data.used_time === undefined || data.used_time < 0) {
+            alert('请填写转入日期、原因和已享受的服务时长');
+            return false;
+          }
+        } else if (type === '5') {
+          if (!data.deathDate || !data.reason) {
+            alert('请填写死亡日期和原因');
+            return false;
+          }
+        } else if (type === '6') {
+          if (!data.abandonDate || !data.reason) {
+            alert('请填写放弃日期和原因');
+            return false;
+          }
+        }
+        return true;
+      }
+      
+      // ========== 2. 待处理流程功能（需要自己审批） ==========
+      function renderPendingProcessList() {
+        const tbody = $('#pendingProcessTableBody');
+        tbody.empty();
+        
+        // 筛选数据
+        let filteredData = [...pendingProcessData];
+        const typeFilter = $('#pendingTypeFilter').val();
+        const dateFilter = $('#pendingDateFilter').val();
+        
+        if (typeFilter && typeFilter !== 'all') {
+          filteredData = filteredData.filter(item => item.req_type === typeFilter);
+        }
+        
+        if (dateFilter) {
+          filteredData = filteredData.filter(item => item.start_time.startsWith(dateFilter));
+        }
+        
+        if (filteredData.length === 0) {
+          tbody.html('<tr><td colspan="6" class="text-center text-muted">暂无待处理流程</td></tr>');
+          $('#pending-process-tab .badge-count').text('0');
+          return;
+        }
+        
+        filteredData.forEach(item => {
+          const row = `
+            <tr>
+              <td>${item.client_name}</td>
+              <td>${reqTypeMap[item.req_type]}</td>
+              <td>${item.promoter_name}</td>
+              <td>${item.start_time.split(' ')[0]}</td>
+              <td><span class="status-pending">待审批</span></td>
+              <td>
+                <button class="btn btn-sm btn-primary view-process-btn" 
+                        data-id="${item.id}" 
+                        data-type="${item.req_type}"
+                        data-source="pending">查看详情</button>
+              </td>
+            </tr>
+          `;
+          tbody.append(row);
+        });
+        
+        $('#pending-process-tab .badge-count').text(filteredData.length);
+      }
+      
+      $('#pendingSearchBtn').click(function() {
+        renderPendingProcessList();
+      });
+      
+      $('#pendingResetBtn').click(function() {
+        $('#pendingTypeFilter').val('all');
+        $('#pendingDateFilter').val('');
+        renderPendingProcessList();
+      });
+      
+      // ========== 3. 待审批流程功能（自己发起等待别人审批） ==========
+      function renderWaitingApprovalList() {
+        const tbody = $('#waitingApprovalTableBody');
+        tbody.empty();
+        
+        // 筛选数据
+        let filteredData = [...waitingApprovalData];
+        const typeFilter = $('#waitingTypeFilter').val();
+        const dateFilter = $('#waitingDateFilter').val();
+        
+        if (typeFilter && typeFilter !== 'all') {
+          filteredData = filteredData.filter(item => item.req_type === typeFilter);
+        }
+        
+        if (dateFilter) {
+          filteredData = filteredData.filter(item => item.start_time.startsWith(dateFilter));
+        }
+        
+        if (filteredData.length === 0) {
+          tbody.html('<tr><td colspan="6" class="text-center text-muted">暂无待审批流程</td></tr>');
+          $('#waiting-approval-tab .badge-count').text('0');
+          return;
+        }
+        
+        filteredData.forEach(item => {
+          const row = `
+            <tr>
+              <td>${item.client_name}</td>
+              <td>${reqTypeMap[item.req_type]}</td>
+              <td>${item.start_time.split(' ')[0]}</td>
+              <td>${item.current_approver || '-'}</td>
+              <td><span class="status-processing">审批中</span></td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary view-process-btn" 
+                        data-id="${item.id}" 
+                        data-type="${item.req_type}"
+                        data-source="waiting">查看详情</button>
+              </td>
+            </tr>
+          `;
+          tbody.append(row);
+        });
+        
+        $('#waiting-approval-tab .badge-count').text(filteredData.length);
+      }
+      
+      $('#waitingSearchBtn').click(function() {
+        renderWaitingApprovalList();
+      });
+      
+      $('#waitingResetBtn').click(function() {
+        $('#waitingTypeFilter').val('all');
+        $('#waitingDateFilter').val('');
+        renderWaitingApprovalList();
+      });
+      
+      // ========== 4. 已完成流程功能（自己发起的已完成的） ==========
+      function renderCompletedProcessList() {
+        const tbody = $('#completedProcessTableBody');
+        tbody.empty();
+        
+        // 筛选数据
+        let filteredData = [...completedProcessData];
+        const typeFilter = $('#completedTypeFilter').val();
+        const dateFilter = $('#completedDateFilter').val();
+        
+        if (typeFilter && typeFilter !== 'all') {
+          filteredData = filteredData.filter(item => item.req_type === typeFilter);
+        }
+        
+        if (dateFilter) {
+          filteredData = filteredData.filter(item => item.complete_time && item.complete_time.startsWith(dateFilter));
+        }
+        
+        if (filteredData.length === 0) {
+          tbody.html('<tr><td colspan="6" class="text-center text-muted">暂无已完成流程</td></tr>');
+          return;
+        }
+        
+        filteredData.forEach(item => {
+          const resultBadge = item.result === 'approved' 
+            ? '<span class="status-approved">已通过</span>'
+            : '<span class="status-rejected">已驳回</span>';
+          
+          const row = `
+            <tr>
+              <td>${item.client_name}</td>
+              <td>${reqTypeMap[item.req_type]}</td>
+              <td>${item.start_time.split(' ')[0]}</td>
+              <td>${item.complete_time ? item.complete_time.split(' ')[0] : '-'}</td>
+              <td>${resultBadge}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary view-process-btn" 
+                        data-id="${item.id}" 
+                        data-type="${item.req_type}"
+                        data-source="completed">查看详情</button>
+              </td>
+            </tr>
+          `;
+          tbody.append(row);
+        });
+      }
+      
+      $('#completedSearchBtn').click(function() {
+        renderCompletedProcessList();
+      });
+      
+      $('#completedResetBtn').click(function() {
+        $('#completedTypeFilter').val('all');
+        $('#completedDateFilter').val('');
+        renderCompletedProcessList();
+      });
+      
+      // ========== 查看流程详情（根据来源标签页获取不同数据） ==========
+      $(document).on('click', '.view-process-btn', function() {
+        const processId = parseInt($(this).data('id'));
+        const processType = $(this).data('type');
+        const source = $(this).data('source'); // pending, waiting, completed
+        
+        let processData = null;
+        
+        // 根据来源获取对应的数据
+        if (source === 'pending') {
+          processData = pendingProcessData.find(p => p.id === processId);
+        } else if (source === 'waiting') {
+          processData = waitingApprovalData.find(p => p.id === processId);
+        } else if (source === 'completed') {
+          processData = completedProcessData.find(p => p.id === processId);
+        }
+        
+        if (!processData) {
+          alert('未找到流程数据');
+          return;
+        }
+        
+        // 获取完整的流程详情（包括审批流程，实际应从后端API获取）
+        const fullProcessData = {
+          ...processData,
+          // 转出申请特有字段（示例）
+          in_home: processData.req_type === '3' ? true : undefined,
+          service_name: processData.req_type === '3' ? 'XX护理机构' : undefined,
+          new_address: processData.req_type === '3' ? '越城区XX街道XX号' : undefined,
+          new_agent: processData.req_type === '3' ? '张三' : undefined,
+          new_phone: processData.req_type === '3' ? '13800138000' : undefined,
+          // 转入申请特有字段（示例）
+          used_time: processData.req_type === '4' ? 15.5 : undefined,
+          // 审批流程（实际应从后端API获取）
+          flow: [
+            { req_id: processId, start_time: processData.start_time, stop_time: null, reason: null, emp_id: processData.promoter_id, emp_name: processData.promoter_name, result: 1, isnurse: false },
+            { req_id: processId, start_time: processData.start_time.replace('10:30', '14:20'), stop_time: source === 'completed' ? processData.complete_time : null, reason: source === 'completed' ? '审批通过' : null, emp_id: currentUserId, emp_name: currentUserName, result: source === 'completed' ? (processData.result === 'approved' ? 2 : 3) : null, isnurse: false }
+          ]
+        };
+        
+        showProcessDetail(fullProcessData, source);
+      });
+      
+      // 显示流程详情
+      function showProcessDetail(data, source) {
+        $('#processDetailModalTitle').text(`${reqTypeMap[data.req_type]} - ${data.client_name}`);
+        
+        // 生成申请信息HTML
+        let infoHtml = `
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">服务对象</label>
+                <div class="form-control-plaintext">${data.client_name}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">申请类型</label>
+                <div class="form-control-plaintext">${reqTypeMap[data.req_type]}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">发起时间</label>
+                <div class="form-control-plaintext">${data.start_time}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">发起人</label>
+                <div class="form-control-plaintext">${data.promoter_name || data.promoter || '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-12">
+              <div class="mb-3">
+                <label class="form-label fw-bold">变动原因</label>
+                <div class="form-control-plaintext">${data.reason || '-'}</div>
+              </div>
+            </div>
+        `;
+        
+        // 根据申请类型显示特有字段
+        if (data.req_type === '3' && data.in_home !== undefined) {
+          // 转出申请（红色列）
+          infoHtml += `
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">转出后是否居家护理</label>
+                <div class="form-control-plaintext">${data.in_home ? '是' : '否'}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">转出地定点服务机构名称</label>
+                <div class="form-control-plaintext">${data.service_name || '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-12">
+              <div class="mb-3">
+                <label class="form-label fw-bold">转出地址</label>
+                <div class="form-control-plaintext">${data.new_address || '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">转出地代理人</label>
+                <div class="form-control-plaintext">${data.new_agent || '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">转出地代理人电话</label>
+                <div class="form-control-plaintext">${data.new_phone || '-'}</div>
+              </div>
+            </div>
+          `;
+        } else if (data.req_type === '4' && data.used_time !== undefined) {
+          // 转入申请（蓝色列）
+          infoHtml += `
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">转入时当月已享受的服务时长（小时）</label>
+                <div class="form-control-plaintext">${data.used_time || 0}</div>
+              </div>
+            </div>
+          `;
+        }
+        
+        infoHtml += `</div>`;
+        $('#processDetailInfo').html(infoHtml);
+        
+        // 生成审批流程HTML（对应clt_chan_flow表）
+        let flowHtml = '<table class="table table-bordered">';
+        flowHtml += '<thead><tr><th>到达时间</th><th>操作人</th><th>操作时间</th><th>操作结果</th><th>审批意见</th></tr></thead><tbody>';
+        
+        if (data.flow && data.flow.length > 0) {
+          data.flow.forEach((flow, index) => {
+            const resultMap = {
+              '1': '<span class="badge bg-info">提交下一步</span>',
+              '2': '<span class="badge bg-success">结束</span>',
+              '3': '<span class="badge bg-danger">驳回</span>',
+              '4': '<span class="badge bg-warning">待归档</span>',
+              'null': '<span class="badge bg-secondary">待处理</span>'
+            };
+            const result = flow.result === null ? 'null' : String(flow.result);
+            flowHtml += `
+              <tr>
+                <td>${flow.start_time}</td>
+                <td>${flow.emp_name || '-'} ${flow.isnurse ? '(护理员)' : ''}</td>
+                <td>${flow.stop_time || '-'}</td>
+                <td>${resultMap[result] || '-'}</td>
+                <td>${flow.reason || '-'}</td>
+              </tr>
+            `;
+          });
+        } else {
+          flowHtml += '<tr><td colspan="5" class="text-center text-muted">暂无审批记录</tr>';
+        }
+        flowHtml += '</tbody></table>';
+        $('#processDetailFlow').html(flowHtml);
+        
+        // 生成变动历史HTML（对应clt_chan_his表，只读）
+        let historyHtml = '<div class="alert alert-info"><i class="fa fa-info-circle"></i> 变动历史由系统自动维护，为只读数据</div>';
+        historyHtml += '<table class="table table-bordered">';
+        historyHtml += '<thead><tr><th>开始日期</th><th>开始状态</th><th>开始级别</th><th>结束日期</th><th>结束状态</th><th>结束级别</th><th>变动原因</th></tr></thead>';
+        historyHtml += '<tbody><tr><td colspan="7" class="text-center text-muted">暂无历史记录</td></tr></tbody>';
+        historyHtml += '</table>';
+        $('#processDetailHistory').html(historyHtml);
+        
+        // 判断是否显示审批按钮（只有待处理流程且当前用户是审批人时才显示）
+        const canApprove = source === 'pending' && data.can_approve && !data.completed;
+        
+        if (canApprove) {
+          $('#approveProcessBtn, #rejectProcessBtn').show();
+        } else {
+          $('#approveProcessBtn, #rejectProcessBtn').hide();
+        }
+        
+        // 保存当前流程ID和来源用于审批操作
+        $('#processDetailModal').data('processId', data.id);
+        $('#processDetailModal').data('processSource', source);
+        $('#processDetailModal').data('processData', data);
+        
+        processDetailModal.show();
+      }
+      
+      // 审批通过
+      $('#approveProcessBtn').click(function() {
+        $('#approvalActionModalTitle').text('审批通过');
+        $('#rejectReasonGroup').hide();
+        $('#approvalComment').val('');
+        $('#rejectReason').val('');
+        approvalActionModal.show();
+      });
+      
+      // 审批驳回
+      $('#rejectProcessBtn').click(function() {
+        $('#approvalActionModalTitle').text('审批驳回');
+        $('#rejectReasonGroup').show();
+        $('#approvalComment').val('');
+        $('#rejectReason').val('');
+        approvalActionModal.show();
+      });
+      
+      // 确认审批操作
+      $('#confirmApprovalBtn').click(function() {
+        const comment = $('#approvalComment').val().trim();
+        if (!comment) {
+          alert('请输入审批意见');
+          return;
+        }
+        
+        const isReject = $('#approvalActionModalTitle').text() === '审批驳回';
+        if (isReject) {
+          const rejectReason = $('#rejectReason').val().trim();
+          if (!rejectReason) {
+            alert('请输入驳回原因');
+            return;
+          }
+        }
+        
+        const processId = $('#processDetailModal').data('processId');
+        const source = $('#processDetailModal').data('processSource') || 'pending';
+        const processData = $('#processDetailModal').data('processData');
+        const result = isReject ? 3 : 2; // 3-驳回, 2-结束
+        
+        // 实际项目中应调用后端API
+        console.log('审批操作:', {
+          req_id: processId,
+          result: result,
+          reason: comment,
+          reject_reason: isReject ? $('#rejectReason').val() : null
+        });
+        
+        // 如果是待处理流程的审批，需要将流程移到已完成列表
+        if (source === 'pending') {
+          // 从待处理列表中移除
+          const pendingIndex = pendingProcessData.findIndex(p => p.id === processId);
+          if (pendingIndex > -1) {
+            pendingProcessData.splice(pendingIndex, 1);
+          }
+          
+          // 添加到已完成列表（注意：这是审批人发起的流程，不是自己发起的）
+          // 但根据业务需求，已完成流程只显示"自己发起的"，所以这里不添加
+          // 如果流程是别人发起的，审批后应该从待处理列表移除即可
+        }
+        
+        alert(isReject ? '已驳回申请' : '审批通过成功');
+        approvalActionModal.hide();
+        processDetailModal.hide();
+        
+        // 刷新列表
+        if (source === 'pending') {
+          renderPendingProcessList();
+        }
+      });
+      
+      // ========== 初始化 ==========
+      // 初始化时渲染所有列表
+      renderPendingProcessList();
+      renderWaitingApprovalList();
+      renderCompletedProcessList();
+      
+      // 标签页切换时刷新数据
+      $('#processTabs button').on('shown.bs.tab', function(e) {
+        const target = $(e.target).data('bs-target');
+        if (target === '#pending-process') {
+          renderPendingProcessList();
+        } else if (target === '#waiting-approval') {
+          renderWaitingApprovalList();
+        } else if (target === '#completed-process') {
+          renderCompletedProcessList();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+
