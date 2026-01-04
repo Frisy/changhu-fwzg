@@ -91,12 +91,6 @@
       <div class="nav-group-title">看板管理</div>
       <ul class="nav-menu">
         <li class="nav-item">
-          <a href="数据驾驶舱.html" class="nav-link">
-            <i class="fa fa-dashboard"></i>
-            <span>数据驾驶舱</span>
-          </a>
-        </li>
-        <li class="nav-item">
           <a href="index.html" class="nav-link">
             <i class="fa fa-dashboard"></i>
             <span>服务对象看板</span>
@@ -220,61 +214,20 @@
               </div>
             </div>
             <div class="card-body">
-              <!-- 筛选表单区域 -->
-              <div class="filter-panel mb-3" id="pendingFilterPanel" style="display: none;">
-                <div class="card border-primary">
-                  <div class="card-body">
-                    <div class="row g-3">
-                      <div class="col-md-3">
-                        <label for="filterClientName" class="form-label">姓名</label>
-                        <input type="text" class="form-control form-control-sm" id="filterClientName" placeholder="请输入姓名">
-                      </div>
-                      <div class="col-md-3">
-                        <label for="filterCaregiver" class="form-label">负责护理员</label>
-                        <select class="form-select form-select-sm" id="filterCaregiver">
-                          <option value="">全部</option>
-                        </select>
-                      </div>
-                      <div class="col-md-6">
-                        <label for="filterVisitInterval" class="form-label">未回访时间间隔</label>
-                        <div class="d-flex gap-2">
-                          <select class="form-select form-select-sm" id="filterVisitInterval" style="flex: 1;">
-                            <option value="">全部</option>
-                            <option value="30">30天以上</option>
-                            <option value="60">60天以上</option>
-                            <option value="90">90天以上</option>
-                            <option value="180">180天以上</option>
-                            <option value="custom">自定义天数</option>
-                          </select>
-                          <div id="customDaysGroup" style="display: none; flex: 1;">
-                            <input type="number" class="form-control form-control-sm" id="filterCustomDays" placeholder="请输入天数" min="1">
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="row mt-3">
-                      <div class="col-12">
-                        <button type="button" class="btn btn-primary btn-sm" id="applyPendingFilter">
-                          <i class="fa fa-search"></i> 应用筛选
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm ms-2" id="resetPendingFilter">
-                          <i class="fa fa-refresh"></i> 重置
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
               <div class="table-responsive">
                 <table class="visit-table" id="pendingVisitTable">
                   <thead>
                     <tr>
                       <th><input type="checkbox" id="selectAllPending"></th>
                       <th>姓名</th>
-                      <th>身份证号</th>
+                      <th>性别</th>
+                      <th>级别</th>
                       <th>地址</th>
+                      <th>电话</th>
+                      <th>状态</th>
                       <th>负责护理员</th>
+                      <th>剩余工时</th>
+                      <th>工单安排</th>
                       <th>上次回访时间</th>
                       <th>操作</th>
                     </tr>
@@ -537,6 +490,43 @@
     </div>
   </div>
 
+  <!-- 服务对象详情和档案模态框 -->
+  <div class="modal fade" id="objectDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="objectDetailModalTitle">服务对象详情</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <ul class="nav nav-tabs" id="objectDetailTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="object-basic-info-tab" data-bs-toggle="tab" data-bs-target="#object-basic-info" type="button" role="tab">基本信息</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="object-archive-info-tab" data-bs-toggle="tab" data-bs-target="#object-archive-info" type="button" role="tab">档案信息</button>
+            </li>
+          </ul>
+          <div class="tab-content" id="objectDetailTabContent">
+            <div class="tab-pane fade show active" id="object-basic-info" role="tabpanel">
+              <div id="objectDetailBody" class="mt-3">
+                <!-- 基本信息内容将通过JavaScript动态生成 -->
+              </div>
+            </div>
+            <div class="tab-pane fade" id="object-archive-info" role="tabpanel">
+              <div id="objectArchiveBody" class="mt-3">
+                <!-- 档案信息内容将通过JavaScript动态生成 -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 线下回访照片预览模态框 -->
   <div class="modal fade" id="photoPreviewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -624,18 +614,215 @@
 
     $(function() {
       // 初始化模态框
+      const objectDetailModal = new bootstrap.Modal('#objectDetailModal');
       const photoPreviewModal = new bootstrap.Modal('#photoPreviewModal');
+      
+      // 服务对象详情和档案功能
+      function generateObjectArchiveHtml(objId) {
+        // 根据client_file_stru表，按position分组显示档案
+        const initialFiles = [
+          { name: '本人身份证', pageNum: 2, optional: false, yangNeed: false },
+          { name: '代理人身份证', pageNum: 2, optional: true, yangNeed: false },
+          { name: '失能等级自评表', pageNum: 1, optional: false, yangNeed: false },
+          { name: '评估申请表', pageNum: 2, optional: false, yangNeed: false },
+          { name: '病情承诺书', pageNum: 1, optional: false, yangNeed: false },
+          { name: '病例或证明', pageNum: 0, optional: false, yangNeed: true }
+        ];
+        
+        const publicFiles = [
+          { name: '服务协议', pageNum: 0, optional: false, yangNeed: false },
+          { name: '评估结论书', pageNum: 1, optional: false, yangNeed: false },
+          { name: '中止服务协议', pageNum: 1, optional: false, yangNeed: false },
+          { name: '转出申请', pageNum: 1, optional: false, yangNeed: false },
+          { name: '死亡证明', pageNum: 1, optional: false, yangNeed: false }
+        ];
+        
+        const contractFiles = [
+          { name: '服务计划', pageNum: 0, optional: false, yangNeed: false, saveType: 2 },
+          { name: '服务记录', pageNum: 0, optional: false, yangNeed: false, saveType: 2 },
+          { name: '转入申请', pageNum: 1, optional: false, yangNeed: false, saveType: 3 }
+        ];
+        
+        return `
+          <div class="mb-4 mt-3">
+            <h6><i class="fa fa-file-text"></i> 初评材料 (position=1)</h6>
+            <div class="archive-files" style="display: flex; flex-wrap: wrap; gap: 15px;">
+              ${initialFiles.map(file => `
+                <div class="archive-file-item" style="text-align: center;">
+                  <img src="https://via.placeholder.com/150x120?text=${encodeURIComponent(file.name)}" alt="${file.name}" style="width: 150px; height: 120px; border: 1px solid #ddd; border-radius: 4px;">
+                  <div class="file-name" style="margin-top: 5px; font-size: 12px;">${file.name}${file.pageNum > 0 ? ` (${file.pageNum}页)` : ''}${file.optional ? ' [可选]' : ''}${file.yangNeed ? ' [60岁以下]' : ''}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="mb-4">
+            <h6><i class="fa fa-file-text"></i> 公示后材料 (position=2)</h6>
+            <div class="archive-files" style="display: flex; flex-wrap: wrap; gap: 15px;">
+              ${publicFiles.map(file => `
+                <div class="archive-file-item" style="text-align: center;">
+                  <img src="https://via.placeholder.com/150x120?text=${encodeURIComponent(file.name)}" alt="${file.name}" style="width: 150px; height: 120px; border: 1px solid #ddd; border-radius: 4px;">
+                  <div class="file-name" style="margin-top: 5px; font-size: 12px;">${file.name}${file.pageNum > 0 ? ` (${file.pageNum}页)` : ''}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="mb-4">
+            <h6><i class="fa fa-file-text"></i> 签约后材料 (position=3)</h6>
+            <div class="archive-files" style="display: flex; flex-wrap: wrap; gap: 15px;">
+              ${contractFiles.map(file => `
+                <div class="archive-file-item" style="text-align: center;">
+                  <img src="https://via.placeholder.com/150x120?text=${encodeURIComponent(file.name)}" alt="${file.name}" style="width: 150px; height: 120px; border: 1px solid #ddd; border-radius: 4px;">
+                  <div class="file-name" style="margin-top: 5px; font-size: 12px;">${file.name}${file.saveType === 2 ? ' [每月一份]' : file.saveType === 3 ? ' [记录日期]' : ''}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+      
+      function showObjectDetail(objId) {
+        const obj = mockPendingVisitData.find(o => o.client_id === objId);
+        if (!obj) {
+          alert('未找到服务对象数据');
+          return;
+        }
+        
+        // 生成基本信息HTML
+        const basicInfoHtml = `
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">姓名</label>
+                <div class="form-control-plaintext">${obj.client_name}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">性别</label>
+                <div class="form-control-plaintext">${obj.client_gender || '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">失能等级</label>
+                <div class="form-control-plaintext">${obj.client_level || '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">身份证号</label>
+                <div class="form-control-plaintext">${obj.client_idcard || '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">居住地址</label>
+                <div class="form-control-plaintext">${obj.client_address || '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">联系电话</label>
+                <div class="form-control-plaintext">${obj.client_phone || '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">服务状态</label>
+                <div class="form-control-plaintext">${obj.client_status || '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">负责护理员</label>
+                <div class="form-control-plaintext">${obj.caregiver_name || '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">剩余工时</label>
+                <div class="form-control-plaintext">${obj.remainHours !== undefined ? obj.remainHours + '小时' : '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">上次回访时间</label>
+                <div class="form-control-plaintext">${obj.last_visit_time || '-'}</div>
+              </div>
+            </div>
+            <div class="col-md-12">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">工单安排</label>
+                <div class="form-control-plaintext">${obj.workOrders || '-'}</div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        const archiveHtml = generateObjectArchiveHtml(objId);
+        
+        $('#objectDetailModalTitle').text(`服务对象详情 - ${obj.client_name}`);
+        $('#objectDetailBody').html(basicInfoHtml);
+        $('#objectArchiveBody').html(archiveHtml);
+        objectDetailModal.show();
+      }
+      
+      function showObjectArchive(objId) {
+        const obj = mockPendingVisitData.find(o => o.client_id === objId);
+        if (!obj) {
+          alert('未找到服务对象数据');
+          return;
+        }
+        
+        // 显示详情模态框并切换到档案标签页
+        $('#objectDetailModalTitle').text(`服务对象详情 - ${obj.client_name}`);
+        const basicInfoHtml = `
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">姓名</label>
+                <div class="form-control-plaintext">${obj.client_name}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label class="form-label fw-bold">性别</label>
+                <div class="form-control-plaintext">${obj.client_gender || '-'}</div>
+              </div>
+            </div>
+          </div>
+        `;
+        $('#objectDetailBody').html(basicInfoHtml);
+        $('#objectArchiveBody').html(generateObjectArchiveHtml(objId));
+        objectDetailModal.show();
+        setTimeout(() => {
+          $('#object-archive-info-tab').click();
+        }, 300);
+      }
+      
+      // 服务对象详情和档案链接事件
+      $(document).on('click', '.obj-detail-link', function(e) {
+        e.stopPropagation();
+        const objId = parseInt($(this).data('id'));
+        showObjectDetail(objId);
+      });
+      
+      $(document).on('click', '.obj-archive-link', function(e) {
+        e.stopPropagation();
+        const objId = parseInt($(this).data('id'));
+        showObjectArchive(objId);
+      });
       
       // ==================== 全局数据存储 ====================
       // 待回访服务对象数据
       const mockPendingVisitData = [
-        {client_id: 101, client_name: '陈一', client_idcard: '330602********1234', client_address: '杭州市西湖区XX路123号', caregiver_name: '李护理', last_visit_time: '2024-08-15'},
-        {client_id: 102, client_name: '吴二', client_idcard: '330602********5678', client_address: '杭州市拱墅区XX路456号', caregiver_name: '王护理', last_visit_time: '2024-08-20'},
-        {client_id: 103, client_name: '郑三', client_idcard: '330602********9012', client_address: '杭州市西湖区XX路789号', caregiver_name: '李护理', last_visit_time: '2024-08-18'},
-        {client_id: 104, client_name: '冯四', client_idcard: '330602********3456', client_address: '杭州市滨江区XX路321号', caregiver_name: '张护理', last_visit_time: '2024-08-25'},
-        {client_id: 105, client_name: '钱五', client_idcard: '330602********7890', client_address: '杭州市上城区XX路654号', caregiver_name: '王护理', last_visit_time: '2024-08-22'},
-        {client_id: 106, client_name: '赵六', client_idcard: '330602********2345', client_address: '杭州市下城区XX路987号', caregiver_name: '李护理', last_visit_time: '2024-07-10'},
-        {client_id: 107, client_name: '孙七', client_idcard: '330602********6789', client_address: '杭州市江干区XX路111号', caregiver_name: '王护理', last_visit_time: '2024-08-05'}
+        {client_id: 101, client_name: '陈一', client_gender: '男', client_level: '一级', client_idcard: '330602********1234', client_address: '杭州市西湖区XX路123号', client_phone: '13800138001', client_status: '正常', caregiver_name: '李护理', remainHours: 1, workOrders: '每周一、三、五，每次2小时', last_visit_time: '2024-08-15'},
+        {client_id: 102, client_name: '吴二', client_gender: '女', client_level: '二级', client_idcard: '330602********5678', client_address: '杭州市拱墅区XX路456号', client_phone: '13800138002', client_status: '正常', caregiver_name: '王护理', remainHours: 3, workOrders: '每周二、四、六，每次2.5小时', last_visit_time: '2024-08-20'},
+        {client_id: 103, client_name: '郑三', client_gender: '男', client_level: '三级', client_idcard: '330602********9012', client_address: '杭州市西湖区XX路789号', client_phone: '13800138003', client_status: '暂停', caregiver_name: '李护理', remainHours: 30, workOrders: '已暂停', last_visit_time: '2024-08-18'},
+        {client_id: 104, client_name: '冯四', client_gender: '女', client_level: '一级', client_idcard: '330602********3456', client_address: '杭州市滨江区XX路321号', client_phone: '13800138004', client_status: '正常', caregiver_name: '张护理', remainHours: 0, workOrders: '每周一、三、五，每次2小时', last_visit_time: '2024-08-25'},
+        {client_id: 105, client_name: '钱五', client_gender: '男', client_level: '二级', client_idcard: '330602********7890', client_address: '杭州市上城区XX路654号', client_phone: '13800138005', client_status: '正常', caregiver_name: '王护理', remainHours: 15, workOrders: '每周二、四、六，每次2.5小时', last_visit_time: '2024-08-22'},
+        {client_id: 106, client_name: '赵六', client_gender: '女', client_level: '三级', client_idcard: '330602********2345', client_address: '杭州市下城区XX路987号', client_phone: '13800138006', client_status: '正常', caregiver_name: '李护理', remainHours: 25, workOrders: '每周一、三、五，每次2小时', last_visit_time: '2024-07-10'},
+        {client_id: 107, client_name: '孙七', client_gender: '男', client_level: '一级', client_idcard: '330602********6789', client_address: '杭州市江干区XX路111号', client_phone: '13800138007', client_status: '正常', caregiver_name: '王护理', remainHours: 2, workOrders: '每周二、四、六，每次2小时', last_visit_time: '2024-08-05'}
       ];
 
       // 已分配的回访任务（模拟数据）
@@ -646,106 +833,11 @@
       
       // 选中的服务对象（用于分配）
       let selectedClients = [];
-      
-      // 筛选后的待回访数据
-      let filteredPendingVisitData = [...mockPendingVisitData];
 
       // ==================== 1. 待回访列表（随机选择） ====================
-      // 初始化护理员下拉选项
-      function initCaregiverFilter() {
-        const caregiverSet = new Set();
-        mockPendingVisitData.forEach(item => {
-          if (item.caregiver_name) {
-            caregiverSet.add(item.caregiver_name);
-          }
-        });
-        
-        const select = $('#filterCaregiver');
-        select.find('option:not(:first)').remove();
-        
-        Array.from(caregiverSet).sort().forEach(name => {
-          select.append(`<option value="${name}">${name}</option>`);
-        });
-      }
-      
-      // 计算未回访天数
-      function getDaysSinceLastVisit(lastVisitTime) {
-        if (!lastVisitTime) return null;
-        const lastVisit = new Date(lastVisitTime);
-        const now = new Date();
-        const diffTime = Math.abs(now - lastVisit);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays;
-      }
-      
-      // 应用筛选条件
-      function applyPendingFilter() {
-        const clientName = $('#filterClientName').val().trim();
-        const caregiver = $('#filterCaregiver').val();
-        const visitInterval = $('#filterVisitInterval').val();
-        const customDays = parseInt($('#filterCustomDays').val());
-        
-        filteredPendingVisitData = mockPendingVisitData.filter(item => {
-          // 姓名筛选
-          if (clientName) {
-            if (!item.client_name || !item.client_name.includes(clientName)) {
-              return false;
-            }
-          }
-          
-          // 负责护理员筛选
-          if (caregiver) {
-            if (item.caregiver_name !== caregiver) {
-              return false;
-            }
-          }
-          
-          // 未回访时间间隔筛选
-          if (visitInterval) {
-            const daysSince = getDaysSinceLastVisit(item.last_visit_time);
-            if (daysSince === null) {
-              // 如果没有回访记录，可以根据需求决定是否显示
-              // 这里假设没有回访记录的也显示
-              return true;
-            }
-            
-            if (visitInterval === 'custom') {
-              if (isNaN(customDays) || customDays <= 0) {
-                return true; // 如果自定义天数无效，不过滤
-              }
-              return daysSince >= customDays;
-            } else {
-              const intervalDays = parseInt(visitInterval);
-              return daysSince >= intervalDays;
-            }
-          }
-          
-          return true;
-        });
-        
-        renderPendingVisitList(filteredPendingVisitData);
-        
-        // 显示筛选结果提示
-        if (clientName || caregiver || visitInterval) {
-          showMessage('筛选完成', `找到 ${filteredPendingVisitData.length} 条符合条件的记录`, 'success');
-        }
-      }
-      
-      // 重置筛选条件
-      function resetPendingFilter() {
-        $('#filterClientName').val('');
-        $('#filterCaregiver').val('');
-        $('#filterVisitInterval').val('');
-        $('#filterCustomDays').val('');
-        $('#customDaysGroup').hide();
-        filteredPendingVisitData = [...mockPendingVisitData];
-        renderPendingVisitList(filteredPendingVisitData);
-      }
-      
       // 加载待回访列表
       function loadPendingVisitList() {
-        initCaregiverFilter();
-        renderPendingVisitList(filteredPendingVisitData);
+        renderPendingVisitList(mockPendingVisitData);
       }
 
       // 渲染待回访列表
@@ -754,13 +846,18 @@
         tbody.empty();
         
         if (!data || data.length === 0) {
-          tbody.html('<tr><td colspan="7" class="text-center text-muted">暂无待回访的服务对象</td></tr>');
+          tbody.html('<tr><td colspan="12" class="text-center text-muted">暂无待回访的服务对象</td></tr>');
           return;
         }
         
         data.forEach(item => {
           const isSelected = selectedClients.some(c => c.client_id === item.client_id);
+          const statusBadge = item.client_status === '正常' ? '<span class="badge bg-success">正常</span>' :
+                             item.client_status === '暂停' ? '<span class="badge bg-warning">暂停</span>' :
+                             '<span class="badge bg-secondary">其他</span>';
           const detailLink = `<a href="javascript:void(0)" class="obj-detail-link" data-id="${item.client_id}" title="查看详情" style="color: #1890FF; margin-left: 8px;"><i class="fa fa-info-circle"></i></a>`;
+          const archiveLink = `<a href="javascript:void(0)" class="obj-archive-link" data-id="${item.client_id}" title="查看档案" style="color: #1890FF; margin-left: 5px;"><i class="fa fa-folder-open"></i></a>`;
+          
           const row = `
             <tr>
               <td>
@@ -772,10 +869,16 @@
               <td>
                 ${item.client_name || '未知'}
                 ${detailLink}
+                ${archiveLink}
               </td>
-              <td>${item.client_idcard || '-'}</td>
+              <td>${item.client_gender || '-'}</td>
+              <td>${item.client_level || '-'}</td>
               <td>${item.client_address || '-'}</td>
+              <td>${item.client_phone || '-'}</td>
+              <td>${statusBadge}</td>
               <td>${item.caregiver_name || '-'}</td>
+              <td>${item.remainHours !== undefined ? item.remainHours + '小时' : '-'}</td>
+              <td style="font-size: 12px;">${item.workOrders || '-'}</td>
               <td>${item.last_visit_time || '-'}</td>
               <td>
                 <button class="btn btn-primary btn-sm select-client-btn" 
@@ -796,7 +899,7 @@
 
       // 随机选择功能
       function randomSelectClients(count = 3) {
-        const available = filteredPendingVisitData.filter(item => 
+        const available = mockPendingVisitData.filter(item => 
           !selectedClients.some(c => c.client_id === item.client_id)
         );
         
@@ -909,10 +1012,7 @@
               <td><span class="${statusClass}">${statusText}</span></td>
               <td>
                 ${!task.op_time ? `
-                  <button class="btn btn-sm btn-outline-primary edit-assignment-btn" 
-                          data-id="${task.id}"
-                          data-client-id="${task.client_id}"
-                          data-client-name="${task.client_name}">修改</button>
+                  <button class="btn btn-sm btn-outline-primary edit-assignment-btn" data-id="${task.id}">修改</button>
                 ` : '-'}
               </td>
             </tr>
@@ -923,86 +1023,10 @@
         // 绑定修改按钮事件
         $('.edit-assignment-btn').off('click').on('click', function() {
           const taskId = parseInt($(this).data('id'));
-          const clientId = parseInt($(this).data('client-id'));
-          const clientName = $(this).data('client-name');
-          openEditAssignmentModal(taskId, clientId, clientName);
+          // 可以打开修改对话框（PUT /returnvisitRecodes/:id）
+          showMessage('提示', '修改回访分配功能（PUT /returnvisitRecodes/:id）', 'info');
         });
       }
-
-      // 打开修改回访分配模态框
-      function openEditAssignmentModal(taskId, clientId, clientName) {
-        const task = assignedVisitTasks.find(t => t.id === taskId);
-        if (!task) {
-          showMessage('错误', '未找到该回访任务', 'error');
-          return;
-        }
-        
-        // 填充表单数据
-        $('#editAssignmentRecordId').val(taskId);
-        $('#editAssignmentClientId').val(task.client_id);
-        $('#editAssignmentClientName').val(task.client_name || clientName || '未知');
-        $('#editAssignmentVisitType').val(task.visit_type);
-        $('#editAssignmentOpId').val(task.op_id);
-        
-        // 显示模态框
-        const editModal = new bootstrap.Modal('#editAssignmentModal');
-        editModal.show();
-      }
-
-      // 提交修改回访分配表单
-      $('#editAssignmentForm').submit(function(e) {
-        e.preventDefault();
-        
-        const recordId = parseInt($('#editAssignmentRecordId').val());
-        const clientId = parseInt($('#editAssignmentClientId').val());
-        const visitType = parseInt($('#editAssignmentVisitType').val());
-        const opId = parseInt($('#editAssignmentOpId').val());
-        const clientName = $('#editAssignmentClientName').val();
-        
-        if (!visitType || !opId) {
-          showMessage('错误', '请填写完整的分配信息', 'error');
-          return;
-        }
-        
-        // 查找任务
-        const task = assignedVisitTasks.find(t => t.id === recordId);
-        if (!task) {
-          showMessage('错误', '未找到该回访任务', 'error');
-          return;
-        }
-        
-        // 模拟API调用：PUT /returnvisitRecodes/:id
-        task.client_id = clientId;
-        task.visit_type = visitType;
-        task.op_id = opId;
-        
-        // 更新执行人名称显示
-        const opNameMap = {
-          1: '服务主管', 2: '张评估员', 3: '王评估员', 4: '李护理', 5: '王护理'
-        };
-        task.op_name = opNameMap[opId] || `用户${opId}`;
-        
-        console.log('修改回访分配API调用：PUT /returnvisitRecodes/' + recordId, {
-          client_id: clientId,
-          visit_type: visitType,
-          op_id: opId
-        });
-        
-        showMessage('成功', `已成功修改【${clientName}】的回访分配！`, 'success');
-        
-        // 关闭模态框
-        const editModal = bootstrap.Modal.getInstance('#editAssignmentModal');
-        if (editModal) {
-          editModal.hide();
-        }
-        
-        // 重置表单
-        $('#editAssignmentForm')[0].reset();
-        
-        // 更新列表
-        renderAssignedVisitTasks();
-        renderPendingExecutionTasks();
-      });
 
       // 提交回访分配表单
       $('#visitAssignmentForm').submit(function(e) {
@@ -1266,38 +1290,6 @@
         randomSelectClients(3);
       });
 
-      // 筛选按钮 - 显示/隐藏筛选面板
-      $('#pendingFilterBtn').click(function() {
-        const panel = $('#pendingFilterPanel');
-        if (panel.is(':visible')) {
-          panel.slideUp();
-          $(this).removeClass('active');
-        } else {
-          panel.slideDown();
-          $(this).addClass('active');
-        }
-      });
-
-      // 未回访时间间隔选择变化事件
-      $('#filterVisitInterval').change(function() {
-        if ($(this).val() === 'custom') {
-          $('#customDaysGroup').show();
-        } else {
-          $('#customDaysGroup').hide();
-          $('#filterCustomDays').val('');
-        }
-      });
-
-      // 应用筛选按钮
-      $('#applyPendingFilter').click(function() {
-        applyPendingFilter();
-      });
-
-      // 重置筛选按钮
-      $('#resetPendingFilter').click(function() {
-        resetPendingFilter();
-      });
-
       // 查看照片按钮点击事件
       function handleViewPhoto() {
         const visitId = $(this).data('id');
@@ -1379,178 +1371,11 @@
         }
       });
       
-      // 服务对象详情功能
-      const objectDetailModal = new bootstrap.Modal('#objectDetailModal');
-      const mockClientDetailData = {
-        101: { id: 101, name: '陈一', gender: '男', level: '一级', address: '杭州市西湖区XX路123号', phone: '13800138001', status: '正常', caregiver: '李护理', remainHours: 1, workOrders: '每周一、三、五，每次2小时' },
-        102: { id: 102, name: '吴二', gender: '女', level: '二级', address: '杭州市拱墅区XX路456号', phone: '13800138002', status: '正常', caregiver: '王护理', remainHours: 3, workOrders: '每周二、四、六，每次2.5小时' },
-        103: { id: 103, name: '郑三', gender: '男', level: '三级', address: '杭州市西湖区XX路789号', phone: '13800138003', status: '正常', caregiver: '李护理', remainHours: 30, workOrders: '每周一、三、五，每次2小时' },
-        104: { id: 104, name: '冯四', gender: '女', level: '一级', address: '杭州市滨江区XX路321号', phone: '13800138004', status: '正常', caregiver: '张护理', remainHours: 60, workOrders: '每周一、三、五，每次2小时' },
-        105: { id: 105, name: '钱五', gender: '男', level: '二级', address: '杭州市上城区XX路654号', phone: '13800138005', status: '正常', caregiver: '王护理', remainHours: 28.5, workOrders: '每周二、四、六，每次2.5小时' },
-        106: { id: 106, name: '赵六', gender: '女', level: '三级', address: '杭州市下城区XX路987号', phone: '13800138006', status: '正常', caregiver: '李护理', remainHours: 42.2, workOrders: '每周一、三、五，每次2小时' },
-        107: { id: 107, name: '孙七', gender: '男', level: '一级', address: '杭州市江干区XX路111号', phone: '13800138007', status: '正常', caregiver: '王护理', remainHours: 15, workOrders: '每周二、四、六，每次2小时' }
-      };
-      
-      function showObjectDetail(objId) {
-        const obj = mockClientDetailData[objId];
-        if (!obj) {
-          alert('未找到服务对象数据');
-          return;
-        }
-        
-        const basicInfoHtml = `
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label class="form-label fw-bold">姓名</label>
-                <div class="form-control-plaintext">${obj.name}</div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label class="form-label fw-bold">性别</label>
-                <div class="form-control-plaintext">${obj.gender}</div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label class="form-label fw-bold">失能等级</label>
-                <div class="form-control-plaintext">${obj.level}</div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label class="form-label fw-bold">居住地址</label>
-                <div class="form-control-plaintext">${obj.address}</div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label class="form-label fw-bold">联系电话</label>
-                <div class="form-control-plaintext">${obj.phone || '-'}</div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label class="form-label fw-bold">服务状态</label>
-                <div class="form-control-plaintext">${obj.status}</div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label class="form-label fw-bold">负责护理员</label>
-                <div class="form-control-plaintext">${obj.caregiver}</div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label class="form-label fw-bold">剩余工时</label>
-                <div class="form-control-plaintext">${obj.remainHours}小时</div>
-              </div>
-            </div>
-            <div class="col-md-12">
-              <div class="form-group mb-3">
-                <label class="form-label fw-bold">工单安排</label>
-                <div class="form-control-plaintext">${obj.workOrders || '-'}</div>
-              </div>
-            </div>
-          </div>
-        `;
-        
-        $('#objectDetailModalTitle').text(`服务对象详情 - ${obj.name}`);
-        $('#objectDetailBody').html(basicInfoHtml);
-        objectDetailModal.show();
-      }
-      
-      $(document).on('click', '.obj-detail-link', function(e) {
-        e.stopPropagation();
-        const objId = parseInt($(this).data('id'));
-        showObjectDetail(objId);
-      });
-      
       // 页面加载时初始化数据
       loadPendingVisitList();
       renderAssignedVisitTasks();
       renderPendingExecutionTasks();
     });
   </script>
-  
-  <!-- 修改回访分配模态框 -->
-  <div class="modal fade" id="editAssignmentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">修改回访分配</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="editAssignmentForm">
-            <input type="hidden" id="editAssignmentRecordId" name="id">
-            <input type="hidden" id="editAssignmentClientId" name="client_id">
-            
-            <div class="mb-3">
-              <label for="editAssignmentClientName" class="form-label">服务对象 <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="editAssignmentClientName" readonly>
-              <small class="form-text text-muted">服务对象不可修改</small>
-            </div>
-            
-            <div class="mb-3">
-              <label for="editAssignmentVisitType" class="form-label">回访类型 <span class="text-danger">*</span></label>
-              <select class="form-select" id="editAssignmentVisitType" name="visit_type" required>
-                <option value="">请选择回访类型</option>
-                <option value="1">线上回访</option>
-                <option value="2">线下回访</option>
-              </select>
-            </div>
-            
-            <div class="mb-3">
-              <label for="editAssignmentOpId" class="form-label">分配执行回访的用户 <span class="text-danger">*</span></label>
-              <select class="form-select" id="editAssignmentOpId" name="op_id" required>
-                <option value="">请选择执行人</option>
-                <option value="1">服务主管</option>
-                <option value="2">张评估员</option>
-                <option value="3">王评估员</option>
-                <option value="4">李护理</option>
-                <option value="5">王护理</option>
-              </select>
-            </div>
-            
-            <div class="alert alert-info">
-              <i class="fa fa-info-circle"></i> 
-              <strong>API说明：</strong> PUT /returnvisitRecodes/:id<br>
-              参数：client_id（服务对象标识）、visit_type（回访类型）、op_id（分配执行回访的用户标识）<br>
-              返回：成功时返回空对象
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-          <button type="submit" class="btn btn-primary" form="editAssignmentForm">
-            <i class="fa fa-save"></i> 保存修改
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 服务对象详情模态框 -->
-  <div class="modal fade" id="objectDetailModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="objectDetailModalTitle">服务对象详情</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div id="objectDetailBody" class="mt-3">
-            <!-- 基本信息内容将通过JavaScript动态生成 -->
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-        </div>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
